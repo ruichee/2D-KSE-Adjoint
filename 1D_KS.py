@@ -6,7 +6,7 @@ from tqdm import tqdm
 def dealiase(ff, kx):
     k = np.absolute(kx)
     k_max = 1/3 * np.max(k)
-    ff_filtered = np.where(k <= k_max, ff, 0)
+    ff_filtered = np.where(k < k_max, ff, 0)
     return ff_filtered
 
 
@@ -14,8 +14,9 @@ def get_R(u, f, kx):
 
     # non-linear term u∂ₓu in fourier space
     u_sq = u**2
-    u_sqf = np.fft.fft(u_sq**2)
-    u_sqf_x = -1j * kx * u_sqf
+    u_sqf = np.fft.fft(u_sq)
+    u_sqf_x = 1j * kx * u_sqf, kx
+    u_sqf_x = dealiase(u_sqf_x)
     u_sq_x = np.fft.ifft(u_sqf_x)
     udu = -0.5 * u_sq_x
 
@@ -23,7 +24,7 @@ def get_R(u, f, kx):
     udu_f = np.fft.fft(udu)
     u_f = np.fft.fft(u)
     u_f = dealiase(u_f, kx)
-    R_f = udu_f - (-kx**2 + kx**4)*u_f
+    R_f = udu_f + (kx**2 - kx**4)*u_f
     R_f = dealiase(R_f, kx)
     
     # set mean flow = 0, i.e. wave has no DC component (constant offset)
@@ -77,10 +78,12 @@ def plot_data():
 
 def main(u0, L, n, f, dt, n_iter_adj, n_iter_ngh, tol_adj, tol_ngh):
 
+    # define spatial step
+    dx = L/n 
     # given n = EVEN number of collocation points, define grid
-    x = np.linspace(0, L, n)
+    x = np.linspace(0, L-dx, n)
     # fourier wave numbers (k) for DFT
-    kx = 2*np.pi/L * np.arange(-n//2, n//2, 1)
+    kx = 2*np.pi * np.fft.fftfreq(n, d=L/n)
     
 
     u = adj_descent(u0, f, dt, n_iter_adj, tol_adj)
@@ -93,8 +96,9 @@ def main(u0, L, n, f, dt, n_iter_adj, n_iter_ngh, tol_adj, tol_ngh):
 
 
 L = 22
-n = 128
-x = np.linspace(0, L, n)
+n = 256
+dx = L/n
+x = np.linspace(0, L-dx, n) # the minus dx is important to maintain periodicity
 m=2
 u0=2*np.sin(m*2*np.pi*x/L)
 kx = 2*np.pi * np.fft.fftfreq(n, d=L/n)
