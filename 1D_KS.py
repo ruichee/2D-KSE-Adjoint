@@ -3,6 +3,22 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 
+def get_vars(domain_size, num_colloc_pts):
+
+    L, n = domain_size, num_colloc_pts
+
+    # define spatial step
+    dx = L/n 
+
+    # given n = EVEN number of collocation points, define grid
+    x = np.linspace(0, L-dx, n)
+
+    # fourier wave numbers (k) for DFT
+    kx = 2*np.pi * np.fft.fftfreq(n, d=L/n)
+
+    return (x, kx)
+
+
 def dealiase(ff, kx):
     k = np.absolute(kx)
     k_max = 1/3 * np.max(k)
@@ -10,7 +26,7 @@ def dealiase(ff, kx):
     return ff_filtered
 
 
-def get_R(u, f, kx):
+def get_R(u, f, kx): # TRY IMPLEMENTING VIA FINITE DIFFERENCE, VALIDATE IF FEASIBLE
 
     # non-linear term u∂ₓu in fourier space
     u_sq = u**2
@@ -78,13 +94,7 @@ def plot_data():
 
 def main(u0, L, n, f, dt, n_iter_adj, n_iter_ngh, tol_adj, tol_ngh):
 
-    # define spatial step
-    dx = L/n 
-    # given n = EVEN number of collocation points, define grid
-    x = np.linspace(0, L-dx, n)
-    # fourier wave numbers (k) for DFT
-    kx = 2*np.pi * np.fft.fftfreq(n, d=L/n)
-    
+    x, kx = get_vars(domain_size=L, num_colloc_pts=n)
 
     u = adj_descent(u0, f, dt, n_iter_adj, tol_adj)
     
