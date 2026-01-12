@@ -39,7 +39,7 @@ def get_R(u, f, kx): # TRY IMPLEMENTING VIA FINITE DIFFERENCE, VALIDATE IF FEASI
     u_f = np.fft.fft(u)                         # bring u into fourier
     u_f = dealiase(u_f, kx)                     # dealise u
 
-    # non-linear term 
+    # non-linear term -1/2(∂ₓu)^2 in fourier space 
     u_x_f = 1j * kx * u_f                       # ∂ₓu in fourier, differentiate via multiply ik
     u_x = np.fft.ifft(u_x_f)                    # bring back to physical space
     u_x_sq = -0.5 * u_x * u_x                   # get -1/2(∂ₓu)^2
@@ -60,56 +60,62 @@ def get_R(u, f, kx): # TRY IMPLEMENTING VIA FINITE DIFFERENCE, VALIDATE IF FEASI
 
 def get_G(u, f, kx):
 
-    # first obtain R
+    # first obtain R and its fourier transform
     R = get_R(u, f, kx)
+    R_f = np.fft.fft(R)
 
     # non-linear term -∂ₓ(R∂ₓu) in fourier space
     u_f = np.fft.fft(u)
-    u_f = dealiase(u_f)
-
+    u_f = dealiase(u_f, kx)
+    u_x_f = 1j * kx * u_f
+    u_x = np.fft.ifft(u_x_f)
+    inner = R * u_x
+    inner_f  = np.fft.fft(inner)
+    inner_f = dealiase(inner_f, kx)
+    inner_x_f = 1j * kx * inner_f
+    non_lin_term = -np.fft.ifft(inner_x_f)
 
     # add linear terms -∂ₓₓR-∂ₓₓₓₓR in fourier space
+    lin_terms = np.fft.ifft((kx**2 - kx**4)*R_f)
+    G = np.real(non_lin_term + lin_terms)
 
-    lin_terms = (kx**2 - kx**4)*R
+    return G
 
 
-    pass
+def adj_descent(u0, f, dt, n_iter, tol):
 
-
-def adj_descent(u, f, dt, n_iter, tol):
-
-    u_lst = [u]
+    u_lst = [u0]
+    u = u0
 
     for _ in tqdm(range(n_iter)):
 
         un = u.copy()
-        G = get_G(u, f)
+        G = get_G(u, f, kx)
 
         u = un + dt*G # can implement rk45 later on
         u_lst.append(u)
-        
-        err: float # implement error calc
-        if err < tol: 
-            break
+
+        '''if G < tol: 
+            break'''
 
     return u, u_lst
         
 
-def ngh_descent(u, f, dt, n_iter, tol):
+def ngh_descent(u0, f, dt, n_iter, tol):
 
-    u_lst = [u]
+    u_lst = [u0]
+    u = u0
     
     for _ in tqdm(range(n_iter)):
 
         un = u.copy()
-        R = get_R(u, f)
+        R = get_R(u, f, kx)
         
         u = un + dt*R # can implement rk45 later on
         u_lst.append(u)
 
-        err: float # implement error calc
-        if err < tol:
-            break
+        '''if R < tol:
+            break'''
 
     return u, u_lst
 
@@ -119,10 +125,11 @@ def plot_data(u_lst):
     def update():
         pass
     
-    ax, fig = plt.figure()
 
     # animate convergence
-    ani = FuncAnimation(fig=fig, frames=update)
+    #ani = FuncAnimation(fig=fig, frames=update)
+
+    plt.plot(u_lst)
     plt.show()
 
 
@@ -153,11 +160,11 @@ x, kx = get_vars(domain_size=L, num_colloc_pts=n)
 m = 2
 u0 = 2*np.sin(m*2*np.pi*x/L)
 
-u = get_R(u0, 0, kx)
+u = get_G(u0, 0, kx)
 
-U = -(np.fft.ifft(np.fft.fft(u) * 1j * kx))
+#U = -(np.fft.ifft(np.fft.fft(u) * 1j * kx))
 
+main(u0, L, n, 0, 0.01, 1000, 0, 1e-12, 1e-12)
 
 plt.plot(u)
-plt.plot(U)
 plt.show()
