@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
 from matplotlib.animation import FuncAnimation
 from tqdm import tqdm
 
@@ -24,11 +25,11 @@ def dealiase(ff, kx):
 def get_R(u, f, kx): # TRY IMPLEMENTING VIA FINITE DIFFERENCE, VALIDATE IF FEASIBLE
 
     # non-linear term -u∂ₓu in fourier space
-    #u_sq = u**2                                 # obtain u^2, since -u∂ₓu = -0.5*∂ₓ(u^2)
-    #u_sqf = np.fft.fft(u_sq)                    # bring u^2 into fourier space
-    #u_sqf_x = 1j * kx * u_sqf                   # multiply by ik to each u_k (differentiate in fourier)
-    #u_sq_x = np.fft.ifft(u_sqf_x)               # convert back to physical space, we get ∂ₓ(u^2)
-    #udu = -0.5 * u_sq_x                         # multiply by minus half to obtain -u∂ₓu
+    u_sq = u**2                                 # obtain u^2, since -u∂ₓu = -0.5*∂ₓ(u^2)
+    u_sqf = np.fft.fft(u_sq)                    # bring u^2 into fourier space
+    u_sqf_x = 1j * kx * u_sqf                   # multiply by ik to each u_k (differentiate in fourier)
+    u_sq_x = np.fft.ifft(u_sqf_x)               # convert back to physical space, we get ∂ₓ(u^2)
+    udu = -0.5 * u_sq_x                         # multiply by minus half to obtain -u∂ₓu
 
     # alternatively, find -u∂ₓu more directly
     '''u_f = dealiase(np.fft.fft(u), kx)
@@ -39,14 +40,14 @@ def get_R(u, f, kx): # TRY IMPLEMENTING VIA FINITE DIFFERENCE, VALIDATE IF FEASI
     u_f = np.fft.fft(u)                         # bring u into fourier
     u_f = dealiase(u_f, kx)                     # dealise u
 
-    # non-linear term -1/2(∂ₓu)^2 in fourier space 
+    '''# non-linear term -1/2(∂ₓu)^2 in fourier space 
     u_x_f = 1j * kx * u_f                       # ∂ₓu in fourier, differentiate via multiply ik
     u_x = np.fft.ifft(u_x_f)                    # bring back to physical space
-    u_x_sq = -0.5 * u_x * u_x                   # get -1/2(∂ₓu)^2
+    u_x_sq = -0.5 * u_x * u_x                   # get -1/2(∂ₓu)^2'''
 
     # add linear terms -∂ₓₓu-∂ₓₓₓₓu in fourier space 
-    u_x_sq_f = np.fft.fft(u_x_sq)               # bring u∂ₓu back to fourier
-    R_f = u_x_sq_f + (kx**2 - kx**4)*u_f        # add linear terms, n-derivative = multiply u by (ik)^n
+    udu_f = np.fft.fft(udu)               # bring u∂ₓu back to fourier
+    R_f = udu_f + (kx**2 - kx**4)*u_f        # add linear terms, n-derivative = multiply u by (ik)^n
     R_f = dealiase(R_f, kx)                     # dealise R
     
     # set mean flow = 0, no DC component/offset
@@ -64,7 +65,7 @@ def get_G(u, f, kx):
     R = get_R(u, f, kx)
     R_f = np.fft.fft(R)
 
-    # non-linear term -∂ₓ(R∂ₓu) in fourier space
+    '''# non-linear term -∂ₓ(R∂ₓu) in fourier space
     u_f = np.fft.fft(u)
     u_f = dealiase(u_f, kx)
     u_x_f = 1j * kx * u_f
@@ -73,35 +74,42 @@ def get_G(u, f, kx):
     inner_f  = np.fft.fft(inner)
     inner_f = dealiase(inner_f, kx)
     inner_x_f = 1j * kx * inner_f
-    non_lin_term = -np.fft.ifft(inner_x_f)
+    non_lin_term = -np.fft.ifft(inner_x_f)'''
+
+    non_lin_term = -u*np.fft.ifft(1j * kx * R_f)
+    nlt_f = np.fft.fft(non_lin_term)
 
     # add linear terms -∂ₓₓR-∂ₓₓₓₓR in fourier space
-    lin_terms = np.fft.ifft((kx**2 - kx**4)*R_f)
-    G = np.real(non_lin_term + lin_terms)
+    G_f = nlt_f - (kx**2 - kx**4)*R_f
+    G_f = dealiase(G_f, kx)
+    G = np.real(np.fft.ifft(G_f))
 
     return G
 
 
-def adj_descent(u0, f, dt, n_iter, tol):
+def adj_descent(u0, f, T, dt, n_iter, tol):
 
     u_lst = [u0]
+    G_lst = []
     u = u0
-
-    for _ in tqdm(range(n_iter)):
-
+    
+    for _ in range(n_iter):
         un = u.copy()
         G = get_G(u, f, kx)
 
+        #u = solve_ivp(lambda t, u: get_G(u, f, kx), (0,T), un, method='RK45')
+
         u = un + dt*G # can implement rk45 later on
         u_lst.append(u)
+        G_lst.append(sum(G))
 
         '''if G < tol: 
             break'''
 
-    return u, u_lst
+    return u, u_lst, G_lst
         
 
-def ngh_descent(u0, f, dt, n_iter, tol):
+def ngh_descent(u0, f, T, dt, n_iter, tol):
 
     u_lst = [u0]
     u = u0
@@ -129,22 +137,27 @@ def plot_data(u_lst):
     # animate convergence
     #ani = FuncAnimation(fig=fig, frames=update)
 
-    plt.plot(u_lst)
+    plt.plot(u_lst[10])
     plt.show()
 
 
 
-def main(u0, L, n, f, dt, n_iter_adj, n_iter_ngh, tol_adj, tol_ngh):
+def main(u0, L, n, f, T, dt, n_iter_adj, n_iter_ngh, tol_adj, tol_ngh):
 
     u_lst = [u0]
 
-    u, u_lst1 = adj_descent(u0, f, dt, n_iter_adj, tol_adj)
+    u, u_lst1, G_lst1 = adj_descent(u0, f, T, dt, n_iter_adj, tol_adj)
     u_lst += u_lst1
+
+    plt.plot(G_lst1)
+    plt.show()
+    print(u_lst1)
     
     # check if ngh descent is required here
 
-    u, u_lst2 = ngh_descent(u, f, dt, n_iter_ngh, tol_ngh)
+    '''u, u_lst2 = ngh_descent(u, f, T, dt, n_iter_ngh, tol_ngh)
     u_lst += u_lst2
+    print(len(u_lst))'''
 
     plot_data(u_lst)
 
@@ -160,11 +173,13 @@ x, kx = get_vars(domain_size=L, num_colloc_pts=n)
 m = 2
 u0 = 2*np.sin(m*2*np.pi*x/L)
 
-u = get_G(u0, 0, kx)
 
 #U = -(np.fft.ifft(np.fft.fft(u) * 1j * kx))
 
-main(u0, L, n, 0, 0.01, 1000, 0, 1e-12, 1e-12)
+#main(u0, L, n, 0, T=200, dt=1, n_iter_adj=100, n_iter_ngh=0, tol_adj=1e-12, tol_ngh=1e-12)
 
-plt.plot(u)
+#G = get_G(u0, 0, kx)
+
+
+plt.plot(G)
 plt.show()
