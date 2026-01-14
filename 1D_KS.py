@@ -32,12 +32,12 @@ def get_R(u): # TRY IMPLEMENTING VIA FINITE DIFFERENCE, VALIDATE IF FEASIBLE
 
     global kx, f
 
-    # non-linear term -u∂ₓu in fourier space
+    '''# non-linear term -u∂ₓu in fourier space
     u_sq = u**2                                 # obtain u^2, since -u∂ₓu = -0.5*∂ₓ(u^2)
     u_sqf = np.fft.fft(u_sq)                    # bring u^2 into fourier space
     u_sqf_x = 1j * kx * u_sqf                   # multiply by ik to each u_k (differentiate in fourier)
     u_sq_x = np.fft.ifft(u_sqf_x)               # convert back to physical space, we get ∂ₓ(u^2)
-    udu = -0.5 * u_sq_x                         # multiply by minus half to obtain -u∂ₓu
+    udu = -0.5 * u_sq_x                         # multiply by minus half to obtain -u∂ₓu'''
 
     # alternatively, find -u∂ₓu more directly
     '''u_f = dealiase(np.fft.fft(u), kx)
@@ -48,14 +48,14 @@ def get_R(u): # TRY IMPLEMENTING VIA FINITE DIFFERENCE, VALIDATE IF FEASIBLE
     u_f = np.fft.fft(u)                         # bring u into fourier
     u_f = dealiase(u_f)                         # dealise u
 
-    '''# non-linear term -1/2(∂ₓu)^2 in fourier space 
+    # non-linear term -1/2(∂ₓu)^2 in fourier space 
     u_x_f = 1j * kx * u_f                       # ∂ₓu in fourier, differentiate via multiply ik
     u_x = np.fft.ifft(u_x_f)                    # bring back to physical space
-    u_x_sq = -0.5 * u_x * u_x                   # get -1/2(∂ₓu)^2'''
+    u_x_sq = -0.5 * u_x * u_x                   # get -1/2(∂ₓu)^2
 
     # add linear terms -∂ₓₓu-∂ₓₓₓₓu in fourier space 
-    udu_f = np.fft.fft(udu)                     # bring u∂ₓu back to fourier
-    R_f = udu_f + (kx**2 - kx**4)*u_f           # add linear terms, n-derivative = multiply u by (ik)^n
+    u_x_sq_f = np.fft.fft(u_x_sq)               # bring u∂ₓu back to fourier
+    R_f = u_x_sq_f + (kx**2 - kx**4)*u_f        # add linear terms, n-derivative = multiply u by (ik)^n
     R_f = dealiase(R_f)                         # dealise R
 
     # set mean flow = 0, no DC component/offset
@@ -76,22 +76,22 @@ def get_G(u):
     R = get_R(u)
     R_f = np.fft.fft(R)
 
-    '''# non-linear term -∂ₓ(R∂ₓu) in fourier space
+    # non-linear term -∂ₓ(R∂ₓu) in fourier space
     u_f = np.fft.fft(u)
-    u_f = dealiase(u_f, kx)
+    u_f = dealiase(u_f)
     u_x_f = 1j * kx * u_f
     u_x = np.fft.ifft(u_x_f)
     inner = R * u_x
     inner_f  = np.fft.fft(inner)
-    inner_f = dealiase(inner_f, kx)
+    inner_f = dealiase(inner_f)
     inner_x_f = 1j * kx * inner_f
-    non_lin_term = -np.fft.ifft(inner_x_f)'''
+    non_lin_term = -np.fft.ifft(inner_x_f)
 
-    non_lin_term = -u*np.fft.ifft(1j * kx * R_f)
-    nlt_f = np.fft.fft(non_lin_term)
+    '''non_lin_term = -u*np.fft.ifft(1j * kx * R_f)
+    nlt_f = np.fft.fft(non_lin_term)'''
 
     # add linear terms -∂ₓₓR-∂ₓₓₓₓR in fourier space
-    G_f = nlt_f - (kx**2 - kx**4)*R_f
+    G_f = np.fft.fft(non_lin_term) - (kx**2 - kx**4)*R_f
     G_f = dealiase(G_f)
     G = np.real(np.fft.ifft(G_f))
 
@@ -170,7 +170,8 @@ def plot_data(u_lst, t_lst) -> None:
 
     fig, (u_val, res) = plt.subplots(1, 2, figsize=(10, 5))
 
-    [u_val.plot(u_lst[i]) for i in range(1, len(u_lst))]
+    #[u_val.plot(u_lst[i]) for i in range(1, len(u_lst))]
+    u_val.plot(u_lst[-1])
     u_val.plot(u_lst[0], linestyle='--', color='red')
     u_val.set_xlabel('x')
     u_val.set_ylabel('u')
@@ -193,6 +194,17 @@ def main(u0, adj_rtol, adj_atol) -> None:
 
     u_lst, t_lst = adj_descent(u0, adj_rtol, adj_atol)
 
+    # plot and validate with Farazmand results (conservative form)
+    u = u_lst[-1]
+    u_f = np.fft.fft(u)
+    u_x_f = 1j * kx * u_f
+    u_x_f = dealiase(u_x_f)
+    u_x = np.fft.ifft(u_x_f)
+    plt.plot(u_x)
+    plt.plot(2*np.sin(m*2*np.pi*x/L))
+    plt.show()
+
+    # plot own results (integrated non-conservative form)
     plot_data(u_lst, t_lst)
 
 ###############################################################################################
@@ -200,7 +212,7 @@ def main(u0, adj_rtol, adj_atol) -> None:
 # define variables 
 L = 22                          # domain size
 n = 128                         # number of collocation points
-T = 1000                        # max iteration time
+T = 5000                        # max iteration time
 dt = 1                          # iteration step 
 u_tol = 1e-6                    # tolerance for converged u
 
@@ -209,9 +221,10 @@ x, kx = get_vars(domain_size=L, num_colloc_pts=n)
 
 # define initial conditions of field variable u
 m = 1 
-u0 = 2*np.sin(m*2*np.pi*x/L)    # initial wave
+u0 = 2*-np.cos(m*2*np.pi*x/L)   # initial wave
 f = 0                           # forcing term
 
 # call to main function to execute descent
 main(u0, adj_rtol=1e-10, adj_atol=1e-10)
+
 
