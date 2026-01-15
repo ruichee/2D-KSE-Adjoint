@@ -11,25 +11,30 @@ def get_vars(Lx, Ly, nx, ny):
 
     dx = Lx/nx                                  # define x spatial step
     dy = Ly/ny                                  # define x spatial step
+    
     x = np.linspace(0, Lx-dx, nx)               # nx = EVEN no. of collocation points, define grid
     y = np.linspace(0, Ly-dy, ny)               # ny = EVEN no. of collocation points, define grid
+    
     kx = 2*np.pi * np.fft.fftfreq(nx, d=Lx/nx)  # fourier wave numbers (kx) for DFT in x-dir
     ky = 2*np.pi * np.fft.fftfreq(ny, d=Ly/ny)  # fourier wave numbers (ky) for DFT in y-dir
-    kx, ky = np.meshgrid(kx, ky)                # meshgrid of all combinations of kx and ky waves
-    return (x, kx, y, ky)                       # NOTE: L-dx ensure no cutting into next period
+    
+    KX, KY = np.meshgrid(kx, ky)                # meshgrid of all combinations of kx and ky waves
+    X, Y = np.meshgrid(x, y)                    # meshgrid of all combinations of x and y values
+    
+    return (X, KX, Y, KY)                       # NOTE: L-dx ensure no cutting into next period
 
 ###############################################################################################
 
 def dealiase(ff):
     
-    global kx, ky
+    global KX, KY
 
-    kx_abs = np.absolute(kx)
-    ky_abs = np.absolute(ky)
+    kx_abs = np.absolute(KX)
+    ky_abs = np.absolute(KY)
     kx_max = 1/3 * np.max(kx_abs)                       # maximum frequency that we will keep
     ky_max = 1/3 * np.max(ky_abs)                       # maximum frequency that we will keep
-    ff_filterx = np.where(kx < kx_max, ff, 0)           # all higher frequencies in x are set to 0
-    ff_filterxy = np.where(ky < ky_max, ff_filterx, 0)  # all higher frequencies in y are set to 0
+    ff_filterx = np.where(KX < kx_max, ff, 0)           # all higher frequencies in x are set to 0
+    ff_filterxy = np.where(KY < ky_max, ff_filterx, 0)  # all higher frequencies in y are set to 0
     
     return ff_filterxy
 
@@ -37,7 +42,7 @@ def dealiase(ff):
 
 def get_R(u): # TRY IMPLEMENTING VIA FINITE DIFFERENCE, VALIDATE IF FEASIBLE
 
-    global kx, f
+    global KX, f
 
     # non-linear term -u∂ₓu in fourier space (for conservative form)
     '''u_sq = u**2                                 # obtain u^2, since -u∂ₓu = -0.5*∂ₓ(u^2)
@@ -77,7 +82,7 @@ def get_R(u): # TRY IMPLEMENTING VIA FINITE DIFFERENCE, VALIDATE IF FEASIBLE
 
 def get_G(u):
 
-    global kx, f
+    global KX, f
 
     # first obtain R and its fourier transform
     R = get_R(u)
@@ -212,7 +217,7 @@ def main(u0, adj_rtol, adj_atol) -> None:
     u_x_f = dealiase(u_x_f)
     u_x = np.fft.ifft(u_x_f)
     plt.plot(u_x)
-    plt.plot(2*np.sin(m*2*np.pi*x/L))
+    plt.plot(2*np.sin(m*2*np.pi*x/Lx ))
     plt.show()
 
     # plot own results (integrated non-conservative form)
@@ -228,14 +233,19 @@ dt = 1                          # iteration step
 u_tol = 1e-8                    # tolerance for converged u
 
 # obtain domain field (x), and fourier wave numbers kx
-x, kx, y, ky = get_vars(Lx, Ly, nx, ny)
+X, KX, Y, KY = get_vars(Lx, Ly, nx, ny)
 
 # define initial conditions of field variable u
 m = 1 
-u0 = 2*-np.cos(m*2*np.pi*x/L)   # initial wave
-f = 0                           # forcing term
+n = 4
+u0 = 2*-np.cos(2*np.pi*(m*X/Lx + n*Y/Ly))   # initial wave
+f = 0                                       # forcing term
+
+
+plt.contourf(X, Y, u0)
+plt.show()
 
 # call to main function to execute descent
-main(u0, adj_rtol=1e-10, adj_atol=1e-10)
+#main(u0, adj_rtol=1e-10, adj_atol=1e-10)
 
 
