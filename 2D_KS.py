@@ -85,25 +85,38 @@ def get_G(u):
     R = get_R(u)
     R_f = np.fft.fft2(R)
 
-    # non-linear term -∂ₓ(R∂ₓu) in fourier space
+    # non-linear term (1) in fourier space
     u_f = np.fft.fft2(u)
-    u_f = dealiase(u_f)
-    u_x_f = 1j * kx * u_f
+    u_x_f = 1j * KX * u_f
+    u_y_f = 1j * KY * u_f
     u_x = np.fft.ifft2(u_x_f)
-    inner = R * u_x
-    inner_f  = np.fft.fft2(inner)
-    inner_f = dealiase(inner_f)
-    inner_x_f = 1j * kx * inner_f
-    non_lin_term = -np.fft.ifft(inner_x_f)
+    u_y = np.fft.ifft2(u_y_f)
+    R_x_f = 1j * KX * R_f
+    R_y_f = 1j * KY * R_f
+    R_x = np.fft.ifft2(R_x_f)
+    R_y = np.fft.ifft2(R_y_f)
+    Rx_ux = R_x*u_x
+    Ry_uy = R_y*u_y
+    non_lin_term_1 = -Rx_ux -Ry_uy
 
-    # non-linear term (for conservative form)
-    '''non_lin_term = -u*np.fft.ifft(1j * kx * R_f)
-    nlt_f = np.fft.fft(non_lin_term)'''
+    # non-linear term (2) in fourier space
+    u_xx_f = -KX**2 * u_f
+    u_yy_f = -KY**2 * u_f
+    u_xx = np.fft.ifft2(u_xx_f)
+    u_yy = np.fft.ifft2(u_yy_f)
+    non_lin_term_2 = -R*u_xx -R*u_yy
 
-    # add linear terms -∂ₓₓR-∂ₓₓₓₓR in fourier space
-    G_f = np.fft.fft(non_lin_term) - (kx**2 - kx**4)*R_f
+    # linear terms in fourier space
+    R_xx = np.fft.ifft2(-KX**2 * R_f)
+    R_yy = np.fft.ifft2(-KY**2 * R_f)
+    R_xxxx = np.fft.ifft2(KX**4 * R_f)
+    R_yyyy = np.fft.ifft2(KY**4 * R_f)
+    R_xxyy = np.fft.ifft2(KX**2 * KY**2 * R_f)
+    lin_term = R_xx + R_yy + R_xxxx + R_yyyy + 2*R_xxyy
+
+    G_f = np.fft.fft2(non_lin_term_1 + non_lin_term_2 + lin_term)
     G_f = dealiase(G_f)
-    G = np.real(np.fft.ifft(G_f))
+    G = np.real(np.fft.ifft2(G_f))
 
     return G
 
@@ -207,23 +220,17 @@ def main(u0, adj_rtol, adj_atol) -> None:
 
     u_lst, t_lst = adj_descent(u0, adj_rtol, adj_atol)
 
-    # plot and validate with Farazmand results (conservative form)
-    u = u_lst[-1]
-    u_f = np.fft.fft(u)
-    u_x_f = 1j * kx * u_f
-    u_x_f = dealiase(u_x_f)
-    u_x = np.fft.ifft(u_x_f)
-    plt.plot(u_x)
-    plt.plot(2*np.sin(m*2*np.pi*x/Lx ))
+    plt.contourf(X, Y, u_lst[-1])
+    plt.colorbar()
     plt.show()
 
     # plot own results (integrated non-conservative form)
-    plot_data(u_lst, t_lst)
+    #plot_data(u_lst, t_lst)
 
 ###############################################################################################
 
 # define variables 
-Lx, Ly = 20, 20                 # domain size
+Lx, Ly = 22, 22                 # domain size
 nx, ny = 128, 128               # number of collocation points
 T = 5000                        # max iteration time
 dt = 1                          # iteration step 
@@ -233,15 +240,17 @@ u_tol = 1e-8                    # tolerance for converged u
 X, KX, Y, KY = get_vars(Lx, Ly, nx, ny)
 
 # define initial conditions of field variable u
-m = 1 
+m = 0 
 n = 1
 u0 = 2*-np.cos(2*np.pi*(m*X/Lx + n*Y/Ly))   # initial wave
 f = 0                                       # forcing term
 
 R = get_R(u0)
 plt.contourf(X, Y, u0)
+plt.colorbar()
 plt.show()
 plt.contourf(X, Y, R)
+plt.colorbar()
 plt.show()
 
 # call to main function to execute descent
