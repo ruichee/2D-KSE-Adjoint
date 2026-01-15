@@ -47,14 +47,14 @@ def get_R(u):
     global KX, KY, f
 
     # obtain u in fourier space
-    u_f = np.fft.fft(u)                         # bring u into fourier
+    u_f = np.fft.fft2(u)                         # bring u into fourier
     u_f = dealiase(u_f)                         # dealise u
 
     # non-linear term -1/2(∂ₓu)^2 in fourier space 
     u_x_f = 1j * KX * u_f                       # ∂ₓu in fourier, differentiate via multiply ik_x
     u_y_f = 1j * KY * u_f                       # ∂ᵧu in fourier, differentiate via multiply ik_y
-    u_x = np.fft.ifft(u_x_f)                    # bring back to physical space
-    u_y = np.fft.ifft(u_y_f)                    # bring back to physical space
+    u_x = np.fft.ifft2(u_x_f)                    # bring back to physical space
+    u_y = np.fft.ifft2(u_y_f)                    # bring back to physical space
     u_sq_terms = -0.5 * (u_x*u_x + u_y*u_y)     # get -1/2(∂ₓu)^2
 
     # linear terms -∂ₓₓu-∂ᵧᵧu-∂ₓₓₓₓu-∂ᵧᵧᵧᵧu-2∂ₓₓ∂ᵧᵧu in fourier space 
@@ -63,7 +63,7 @@ def get_R(u):
                     - 2*KX**2*KY**2)*u_f        # n-derivative = multiply u by (ik)^n
     
     # add terms together 
-    R_f = np.fft.fft(u_sq_terms) + lin_terms_f
+    R_f = np.fft.fft2(u_sq_terms) + lin_terms_f
     R_f = dealiase(R_f)                         # dealise R
 
     # set mean flow = 0, no DC component/offset
@@ -71,7 +71,7 @@ def get_R(u):
     R_f = np.where(KY == 0, 0, R_f)             # ensures the sine wave has no constant y component (ky=0)
 
     # convert back to physical space
-    R = np.real(np.fft.ifft(R_f)) + f           # obtain R(u)
+    R = np.real(np.fft.ifft2(R_f)) + f           # obtain R(u)
     
     return R
 
@@ -83,15 +83,15 @@ def get_G(u):
 
     # first obtain R and its fourier transform
     R = get_R(u)
-    R_f = np.fft.fft(R)
+    R_f = np.fft.fft2(R)
 
     # non-linear term -∂ₓ(R∂ₓu) in fourier space
-    u_f = np.fft.fft(u)
+    u_f = np.fft.fft2(u)
     u_f = dealiase(u_f)
     u_x_f = 1j * kx * u_f
-    u_x = np.fft.ifft(u_x_f)
+    u_x = np.fft.ifft2(u_x_f)
     inner = R * u_x
-    inner_f  = np.fft.fft(inner)
+    inner_f  = np.fft.fft2(inner)
     inner_f = dealiase(inner_f)
     inner_x_f = 1j * kx * inner_f
     non_lin_term = -np.fft.ifft(inner_x_f)
