@@ -7,24 +7,31 @@ from tqdm import tqdm
 
 ###############################################################################################
 
-def get_vars(domain_size, num_colloc_pts):
+def get_vars(Lx, Ly, nx, ny):
 
-    L, n = domain_size, num_colloc_pts
-    dx = L/n                                    # define spatial step
-    x = np.linspace(0, L-dx, n)                 # n = EVEN no. of collocation points, define grid
-    kx = 2*np.pi * np.fft.fftfreq(n, d=L/n)     # fourier wave numbers (k) for DFT
-    return (x, kx)                              # NOTE: L-dx ensure no cutting into next period
+    dx = Lx/nx                                  # define x spatial step
+    dy = Ly/ny                                  # define x spatial step
+    x = np.linspace(0, Lx-dx, nx)               # nx = EVEN no. of collocation points, define grid
+    y = np.linspace(0, Ly-dy, ny)               # ny = EVEN no. of collocation points, define grid
+    kx = 2*np.pi * np.fft.fftfreq(nx, d=Lx/nx)  # fourier wave numbers (kx) for DFT in x-dir
+    ky = 2*np.pi * np.fft.fftfreq(ny, d=Ly/ny)  # fourier wave numbers (ky) for DFT in y-dir
+    kx, ky = np.meshgrid(kx, ky)                # meshgrid of all combinations of kx and ky waves
+    return (x, kx, y, ky)                       # NOTE: L-dx ensure no cutting into next period
 
 ###############################################################################################
 
 def dealiase(ff):
     
-    global kx
+    global kx, ky
 
-    k = np.absolute(kx)
-    k_max = 1/3 * np.max(k)                     # maximum frequency that we will keep
-    ff_filtered = np.where(k < k_max, ff, 0)    # all higher frequencies are set to 0
-    return ff_filtered
+    kx_abs = np.absolute(kx)
+    ky_abs = np.absolute(ky)
+    kx_max = 1/3 * np.max(kx_abs)                       # maximum frequency that we will keep
+    ky_max = 1/3 * np.max(ky_abs)                       # maximum frequency that we will keep
+    ff_filterx = np.where(kx < kx_max, ff, 0)           # all higher frequencies in x are set to 0
+    ff_filterxy = np.where(ky < ky_max, ff_filterx, 0)  # all higher frequencies in y are set to 0
+    
+    return ff_filterxy
 
 ###############################################################################################
 
@@ -214,14 +221,14 @@ def main(u0, adj_rtol, adj_atol) -> None:
 ###############################################################################################
 
 # define variables 
-L = 22                          # domain size
-n = 128                         # number of collocation points
+Lx, Ly = 22, 22                 # domain size
+nx, ny = 128, 128               # number of collocation points
 T = 5000                        # max iteration time
 dt = 1                          # iteration step 
 u_tol = 1e-8                    # tolerance for converged u
 
 # obtain domain field (x), and fourier wave numbers kx
-x, kx = get_vars(domain_size=L, num_colloc_pts=n)
+x, kx, y, ky = get_vars(Lx, Ly, nx, ny)
 
 # define initial conditions of field variable u
 m = 1 
