@@ -270,15 +270,24 @@ n = 1
 u0 = np.cos(2*np.pi*(m*X/Lx + n*Y/Ly)) + np.sin(2*np.pi*m*X/Lx)
 f = 0 
 
+# E13 found
+'''m = 1
+n = 1
+u0 = np.cos(2*np.pi*(m*X/Lx + n*Y/Ly)) + np.sin(2*np.pi*m*X/Lx)'''
+
+# display initial conditions
+fig, (u0_ax, R0_ax, G0_ax) = plt.subplots(1, 3, figsize=(15, 5))
 R = get_R(u0)
-plt.contourf(X, Y, u0)
-plt.colorbar()
-plt.show()
-plt.contourf(X, Y, R)
-plt.colorbar()
+G = get_G(0, u0)
+u0_ax.contourf(X, Y, u0)
+R0_ax.contourf(X, Y, R)
+G0_ax.contourf(X, Y, G)
 plt.show()
 
 # call to main function to execute descent
 main(u0, adj_rtol=1e-8, adj_atol=1e-8)
+
+
+
 
 
