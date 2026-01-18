@@ -223,7 +223,7 @@ def plot_data(u_lst, t_lst) -> None:
 
 ###############################################################################################
 
-def main(u0, adj_rtol, adj_atol) -> None:
+def main(u0, adj_rtol, adj_atol):
 
     u_lst, t_lst = adj_descent(u0, adj_rtol, adj_atol)
 
@@ -251,6 +251,8 @@ def main(u0, adj_rtol, adj_atol) -> None:
 
     # plot own results (integrated non-conservative form)
     #plot_data(u_lst, t_lst)
+    
+    return u_lst, t_lst
 
 ###############################################################################################
 
@@ -282,10 +284,13 @@ G = get_G(0, u0)
 u0_ax.contourf(X, Y, u0)
 R0_ax.contourf(X, Y, R)
 G0_ax.contourf(X, Y, G)
+u0_ax.set_title("Initial u")
+R0_ax.set_title("Initial R")
+G0_ax.set_title("Initial G")
 plt.show()
 
 # call to main function to execute descent
-main(u0, adj_rtol=1e-8, adj_atol=1e-8)
+u_lst, t_lst = main(u0, adj_rtol=1e-8, adj_atol=1e-8)
 
 
 
