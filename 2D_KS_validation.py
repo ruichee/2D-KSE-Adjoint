@@ -91,7 +91,7 @@ def time_marching(u0, rtol, atol):
             .flatten(),                     # function that returns du/dt
         t_span=(0, T),                      # (start_time, end_time)
         y0=u0.flatten(),                    # Initial condition
-        method='BDF',                       # 'BDF' or 'Radau' - implicit adaptive time stepping
+        method='Radau',                       # 'BDF' or 'Radau' - implicit adaptive time stepping
         #events=steady_state_event,         # check if ||G(u)|| < tol, can end iteration early
         t_eval=tspan,                       # The specific time points returned
         rtol=rtol,                          # Relative tolerance
@@ -117,7 +117,7 @@ def compute_residuals(t_lst, u_lst):
     return G_lst
 
 ###############################################################################################
-
+'''
 def plot_data(u_lst, t_lst) -> None:
     
     def update():
@@ -148,7 +148,7 @@ def plot_data(u_lst, t_lst) -> None:
 
     fig.tight_layout()
     plt.show()
-
+'''
 ###############################################################################################
 
 def main(u0, adj_rtol, adj_atol):
@@ -179,26 +179,26 @@ def main(u0, adj_rtol, adj_atol):
     ax.set_zlabel("v(x,y)")
     plt.show()
 
-
     # check fourier values
     u_k = np.fft.fft2(u_lst[-1])
     func = lambda x,y: np.round(np.abs(u_k[x,y]), 2)
     print(func(0, 1), func(1, 1), func(1, 0))
     print(func(2, 0), func(2, 1), func(3, 0), 
           func(3, 1), func(0, 2), func(1, 2), func(2, 2))
-
-    # plot own results (integrated non-conservative form)
-    #plot_data(u_lst, t_lst)
     
     return u_lst, t_lst
 
 ###############################################################################################
 
 # define variables 
+epsilon = 0.1
+v1, v2 = 1-epsilon, 1-epsilon
+
 Lx, Ly = np.pi, np.pi                 # domain size
+Lx, Ly = np.pi / np.sqrt(v1), np.pi / np.sqrt(v2)
 nx, ny = 64, 64                 # number of collocation points
 T = 25                         # max iteration time
-dt = 0.05                          # iteration step 
+dt = 0.05                         # iteration step 
 u_tol = 1e-6                    # tolerance for converged u
 
 # obtain domain field (x), and fourier wave numbers kx
@@ -216,21 +216,20 @@ for x in range(nx):
         for i in actuator_x:
             for j in actuator_y:
                 f[x][y] += 1 / (2*np.pi*sigma**2) * np.e**( ((x-i)**2 + (y-j)**2) / (-2*sigma**2) )
-print(actuator_x)
-print(f)
-plt.contourf(X, Y, f)
-plt.show()
 
 # define initial conditions of field variable u
-u0 = np.sin(np.pi*(X/Lx)) + np.sin(np.pi*(Y/Ly))
+u0 = np.sin(np.pi*(X/Lx+Y/Ly)) + np.sin(np.pi*X/Lx) + np.sin(np.pi*Y/Ly)
+#u0 = 2*(np.sin(np.pi*X/Lx) + np.sin(np.pi*Y/Ly))
 
 # display initial conditions
-fig, (u0_ax, R0_ax) = plt.subplots(1, 2, figsize=(10, 5))
+fig, (u0_ax, R0_ax, f_ax) = plt.subplots(1, 3, figsize=(13, 4))
 R = get_R(0, u0)
 u0_ax.contourf(X, Y, u0)
 R0_ax.contourf(X, Y, R)
+f_ax.contourf(X, Y, f)
 u0_ax.set_title("Initial u")
 R0_ax.set_title("Initial R")
+f_ax.set_title("Forcing actuators")
 plt.show()
 
 fig = plt.figure()
@@ -238,10 +237,13 @@ ax = fig.add_subplot(111, projection="3d")
 Z = u0
 ax.plot_surface(X, Y, Z, cmap="viridis")
 ax.contour(X, Y, Z, lw=3, linestyles="solid", offset=-4)
+ax.set_xlim(0, 2*Lx)
+ax.set_ylim(0, 2*Ly)
 ax.set_zlim(-6, 6)
 ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.set_zlabel("v(x,y)")
 plt.show()
 
+# run main function to get results
 main(u0, 1e-8, 1e-8)
