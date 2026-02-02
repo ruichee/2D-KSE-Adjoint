@@ -1,9 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
-from matplotlib.animation import FuncAnimation
-from tqdm import tqdm
-
+from mpl_toolkits.mplot3d import axes3d
 
 ###############################################################################################
 
@@ -35,26 +33,25 @@ def dealiase(ff):
     kx_max = 2/3 * np.max(kx_abs)                       # maximum frequency that we will keep
     ky_max = 2/3 * np.max(ky_abs)                       # maximum frequency that we will keep
 
-    ff_filterx = np.where(KX < kx_max, ff, 0)           # all higher frequencies in x are set to 0
-    ff_filterxy = np.where(KY < ky_max, ff_filterx, 0)  # all higher frequencies in y are set to 0
+    ff_filterx = np.where(np.abs(KX) < kx_max, ff, 0)           # all higher frequencies in x are set to 0
+    ff_filterxy = np.where(np.abs(KY) < ky_max, ff_filterx, 0)  # all higher frequencies in y are set to 0
     
     return ff_filterxy
 
 ###############################################################################################
 
-def get_R(u): 
+def get_R(t, u): 
 
     global KX, KY, f
 
     # obtain u in fourier space
     u_f = np.fft.fft2(u)                        # bring u into fourier
-    u_f = dealiase(u_f)                         # dealise u
 
     # non-linear term -1/2(∂ₓu)^2 in fourier space 
     u_x_f = 1j * KX * u_f                       # ∂ₓu in fourier, differentiate via multiply ik_x
     u_y_f = 1j * KY * u_f                       # ∂ᵧu in fourier, differentiate via multiply ik_y
-    u_x = np.fft.ifft2(u_x_f)                   # bring back to physical space
-    u_y = np.fft.ifft2(u_y_f)                   # bring back to physical space
+    u_x = np.real(np.fft.ifft2(u_x_f))          # bring back to physical space
+    u_y = np.real(np.fft.ifft2(u_y_f))          # bring back to physical space
     u_sq_terms = -0.5 * (u_x*u_x + u_y*u_y)     # get -1/2(∂ₓu)^2
 
     # linear terms -∂ₓₓu-∂ᵧᵧu-∂ₓₓₓₓu-∂ᵧᵧᵧᵧu-2∂ₓₓ∂ᵧᵧu in fourier space 
@@ -72,67 +69,17 @@ def get_R(u):
 
     # convert back to physical space
     R = np.real(np.fft.ifft2(R_f)) + f         # obtain R(u)
+
+    print(t)
     
     return R
-
-###############################################################################################
-
-def get_G(t, u):
-
-    global KX, KY, f
-
-    # first obtain R and its fourier transform
-    R = get_R(u)
-    R_f = np.fft.fft2(R)
-
-    # non-linear term (1) in fourier space
-    u_f = np.fft.fft2(u)
-    u_x_f = 1j * KX * u_f
-    u_y_f = 1j * KY * u_f
-    u_x = np.fft.ifft2(u_x_f)
-    u_y = np.fft.ifft2(u_y_f)
-    R_x_f = 1j * KX * R_f
-    R_y_f = 1j * KY * R_f
-    R_x = np.fft.ifft2(R_x_f)
-    R_y = np.fft.ifft2(R_y_f)
-    Rx_ux = R_x*u_x
-    Ry_uy = R_y*u_y
-    non_lin_term_1 = -Rx_ux -Ry_uy
-
-    # non-linear term (2) in fourier space
-    u_xx_f = -KX**2 * u_f
-    u_yy_f = -KY**2 * u_f
-    u_xx = np.fft.ifft2(u_xx_f)
-    u_yy = np.fft.ifft2(u_yy_f)
-    non_lin_term_2 = -R*u_xx -R*u_yy
-
-    # linear terms in fourier space
-    R_xx = np.fft.ifft2(-KX**2 * R_f)
-    R_yy = np.fft.ifft2(-KY**2 * R_f)
-    R_xxxx = np.fft.ifft2(KX**4 * R_f)
-    R_yyyy = np.fft.ifft2(KY**4 * R_f)
-    R_xxyy = np.fft.ifft2(KX**2 * KY**2 * R_f)
-    lin_term = R_xx + R_yy + R_xxxx + R_yyyy + 2*R_xxyy
-
-    G_f = np.fft.fft2(non_lin_term_1 + non_lin_term_2 + lin_term)
-    G_f = dealiase(G_f)
-
-    # set mean flow = 0, no DC component/offset
-    mask = (KX==0) * (KY==0)
-    G_f = np.where(mask, 0, G_f)
-
-    G = np.real(np.fft.ifft2(G_f))
-
-    print(f"time: {t}, norm: {np.linalg.norm(G)}")
-
-    return G
 
 ###############################################################################################
 
 def steady_state_event(t, u):
 
     # rhs can either be get_R() or get_G()
-    dudt = get_G(u)
+    dudt = get_R(t, u)
 
     # compute R or G as a magnitude 
     change_in_u = np.linalg.norm(dudt)
@@ -150,9 +97,9 @@ steady_state_event.direction = -1   # Only trigger when going from positive -> n
 
 ###############################################################################################
 
-def adj_descent(u0, rtol, atol, T, dt):
+def time_marching(u0, rtol, atol):
 
-    global f, nx, ny
+    global f, T, dt, nx, ny
 
     # Set up the time interval
     nt = int(T / dt) + 1  
@@ -161,12 +108,12 @@ def adj_descent(u0, rtol, atol, T, dt):
     # Integration: use solve_ivp with method='BDF' to mimic ode15s (stiff solver)
     solution = solve_ivp(
         fun=lambda t,u: \
-            get_G(t, u.reshape(nx, ny))
+            get_R(t, u.reshape(nx, ny))
             .flatten(),                     # function that returns du/dt
         t_span=(0, T),                      # (start_time, end_time)
         y0=u0.flatten(),                    # Initial condition
-        method='BDF',                       # 'BDF' or 'Radau' - implicit adaptive time stepping
-        #events=steady_state_event,         # check if ||G(u)|| < tol, can end iteration early
+        method='Radau',                       # 'BDF' or 'Radau' - implicit adaptive time stepping
+        #events=steady_state_event,          # check if ||R(u)|| < tol, can end iteration early
         t_eval=tspan,                       # The specific time points returned
         rtol=rtol,                          # Relative tolerance
         atol=atol                           # Absolute tolerance
@@ -185,13 +132,13 @@ def compute_residuals(t_lst, u_lst):
 
     G_lst = np.zeros(len(u_lst))
 
-    for i in range(len(u_lst)):
-        G_lst[i] = np.linalg.norm(get_G(t_lst[i], u_lst[i]))
+    for i in range(len(u_lst)-1):
+        G_lst[i] = np.linalg.norm(get_R(t_lst[i], u_lst[i]))
 
     return G_lst
 
 ###############################################################################################
-
+'''
 def plot_data(u_lst, t_lst) -> None:
     
     def update():
@@ -212,7 +159,7 @@ def plot_data(u_lst, t_lst) -> None:
     u_val.set_xlim(0, L)
     u_val.grid()
     
-    G_lst = compute_residuals(u_lst)
+    G_lst = compute_residuals(t_lst, u_lst)
     res.plot(t_lst, G_lst)
     res.semilogy()
     res.set_xlabel('τ')
@@ -222,40 +169,40 @@ def plot_data(u_lst, t_lst) -> None:
 
     fig.tight_layout()
     plt.show()
-
+'''
 ###############################################################################################
 
-def main(u0, adj_rtol, adj_atol, T, dt):
+def main(u0, adj_rtol, adj_atol):
 
-    # Run 1
-    u_lst1, t_lst1 = adj_descent(u0, 1e-8, 1e-8, T=80, dt=1)
-    
-    # Run 2: starts from the end of run 1
-    u_lst2, t_lst2 = adj_descent(u_lst1[-1], 1e-10, 1e-10, T=1000, dt=1)
+    u_lst, t_lst = time_marching(u0, adj_rtol, adj_atol)
 
-    # 1. Handle the Time Offset
-    # Shift t_lst2 so it starts where t_lst1 ended
-    t_lst2_shifted = t_lst2 + t_lst1[-1]
-
-    # 2. Concatenate and Remove Overlap
-    # Slicing [1:] removes the duplicate starting point (t=3) from the second run
-    u_lst = np.concatenate((u_lst1, u_lst2[1:]), axis=0)
-    t_lst = np.concatenate((t_lst1, t_lst2_shifted[1:]), axis=0)
+    # plot final contour and residual convergence
     fig, (u_val, res) = plt.subplots(1, 2, figsize=(10, 5))
-
     u_val.contourf(X, Y, u_lst[-1])
-
     G_lst = compute_residuals(t_lst, u_lst)
     res.plot(t_lst, G_lst)
     res.semilogy()
     res.set_xlabel('τ')
-    res.set_title('Residual of Adjoint Norm ||G(u)||')
+    res.set_title('Residual of L2-Norm ||R(u)||')
     res.set_xlim(0, t_lst[-1])
+    res.set_ylim(1e-15, 1e3)
     res.grid()
-
-
     plt.show()
 
+    # plot 3D surface and contour
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+    Z = u_lst[-1]
+    ax.plot_surface(X, Y, Z, cmap="viridis")
+    ax.set_proj_type('ortho')
+    ax.contour(X, Y, Z, levels=8, lw=3, linestyles="solid", offset=-4)
+    ax.set_xlim(0, 2*Lx)
+    ax.set_ylim(0, 2*Ly)
+    ax.set_zlim(-6, 6)
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("v(x,y)")
+    plt.show()
 
     # check fourier values
     u_k = np.fft.fft2(u_lst[-1])
@@ -263,32 +210,24 @@ def main(u0, adj_rtol, adj_atol, T, dt):
     print(func(0, 1), func(1, 1), func(1, 0))
     print(func(2, 0), func(2, 1), func(3, 0), 
           func(3, 1), func(0, 2), func(1, 2), func(2, 2))
-
-    # plot own results (integrated non-conservative form)
-    #plot_data(u_lst, t_lst)
     
     return u_lst, t_lst
 
 ###############################################################################################
 
 # define variables 
-Lx, Ly = 10, 10                 # domain size
+epsilon = 0.1
+v1, v2 = 1-epsilon, 1-epsilon
+
+Lx, Ly = np.pi, np.pi                 # domain size
+Lx, Ly = np.pi / np.sqrt(v1), np.pi / np.sqrt(v2)
 nx, ny = 64, 64                 # number of collocation points
-T = 500                         # max iteration time
-dt = 1                          # iteration step 
-u_tol = 1e-6                    # tolerance for converged u
+T = 25                         # max iteration time
+dt = 0.05                         # iteration step 
+u_tol = 1e-10                    # tolerance for converged u
 
 # obtain domain field (x), and fourier wave numbers kx
 X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
-
-# define initial conditions of field variable u
-m = 1
-n = 1
-u0 = np.sin(np.pi * X/Lx) + np.sin(np.pi * Y/Ly)
-#u0 = np.sin(np.cos(2*np.pi*(m*X/Lx)) + np.cos(2*np.pi*(n*Y/Ly)))
-
-#u0 = np.cos(2*np.pi*(n*Y/Ly + m*X/Lx)) - np.sin(np.cos(2*np.pi*(m*X/Lx))) - np.cos(np.cos(2*np.pi*(n*Y/Ly)))
-
 
 # define forcing actuators
 sigma = 2.4
@@ -303,39 +242,34 @@ for x in range(nx):
             for j in actuator_y:
                 f[x][y] += 1 / (2*np.pi*sigma**2) * np.e**( ((x-i)**2 + (y-j)**2) / (-2*sigma**2) )
 
-f=0
-
-# E13 found
-'''m = 1
-n = 1
-u0 = np.cos(2*np.pi*(m*X/Lx + n*Y/Ly)) + np.sin(2*np.pi*m*X/Lx)
-f = 0'''
-
-# E13 found 
-'''m = 1
-n = 1
-u0 = np.cos(2*np.pi*(n*Y/Ly)) + np.sin(2*np.pi*(m*X/Lx))
-f = 0 '''
-
-# potentially E223
-'''m = 1
-n = 1
-u0 = np.sin(np.sin(2*np.pi*(m*X/Lx)) + np.cos(2*np.pi*(n*Y/Ly)))
-f = 0'''
+# define initial conditions of field variable u
+u0 = np.sin(np.pi*(X/Lx+Y/Ly)) + np.sin(np.pi*X/Lx) + np.sin(np.pi*Y/Ly)
+#u0 = 2*(np.sin(np.pi*X/Lx) + np.sin(np.pi*Y/Ly))
 
 # display initial conditions
-fig, (u0_ax, R0_ax, G0_ax) = plt.subplots(1, 3, figsize=(15, 5))
-R = get_R(u0)
-G = get_G(0, u0)
+fig, (u0_ax, R0_ax, f_ax) = plt.subplots(1, 3, figsize=(13, 4))
+R = get_R(0, u0)
 u0_ax.contourf(X, Y, u0)
 R0_ax.contourf(X, Y, R)
-G0_ax.contourf(X, Y, G)
+f_ax.contourf(X, Y, f)
 u0_ax.set_title("Initial u")
 R0_ax.set_title("Initial R")
-G0_ax.set_title("Initial G")
+f_ax.set_title("Forcing actuators")
 plt.show()
 
-# call to main function to execute descent
-u_lst1, t_lst1 = main(u0, adj_rtol=1e-6, adj_atol=1e-6, T=200, dt=1)
+fig = plt.figure()
+ax = fig.add_subplot(111, projection="3d")
+Z = u0
+ax.plot_surface(X, Y, Z, cmap="viridis")
+ax.set_proj_type('ortho')
+ax.contour(X, Y, Z, levels=8, lw=3, linestyles="solid", offset=-4)
+ax.set_xlim(0, 2*Lx)
+ax.set_ylim(0, 2*Ly)
+ax.set_zlim(-6, 6)
+ax.set_xlabel("x")
+ax.set_ylabel("y")
+ax.set_zlabel("v(x,y)")
+plt.show()
 
-print(get_R(u_lst1[-1]))
+# run main function to get results
+main(u0, 1e-8, 1e-8)
