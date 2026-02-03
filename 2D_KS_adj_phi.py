@@ -225,22 +225,27 @@ def plot_data(u_lst, t_lst) -> None:
 
 ###############################################################################################
 
-def main(u0, adj_rtol, adj_atol, T, dt):
+def main(u0, T1, T2, T3):
 
     # Run 1
-    u_lst1, t_lst1 = adj_descent(u0, 1e-8, 1e-8, T=80, dt=1)
+    u_lst1, t_lst1 = adj_descent(u0, 1e-8, 1e-8, T=T1, dt=1)
     
     # Run 2: starts from the end of run 1
-    u_lst2, t_lst2 = adj_descent(u_lst1[-1], 1e-10, 1e-10, T=1000, dt=1)
+    u_lst2, t_lst2 = adj_descent(u_lst1[-1], 1e-10, 1e-10, T=T2, dt=1)
+
+    # Run 3: starts from the end of run 2
+    u_lst3, t_lst3 = adj_descent(u_lst2[-1], 1e-12, 1e-12, T=T3, dt=1)
 
     # 1. Handle the Time Offset
     # Shift t_lst2 so it starts where t_lst1 ended
     t_lst2_shifted = t_lst2 + t_lst1[-1]
+    t_lst3_shifted = t_lst3 + t_lst2[-1] + t_lst1[-1]
 
     # 2. Concatenate and Remove Overlap
     # Slicing [1:] removes the duplicate starting point (t=3) from the second run
-    u_lst = np.concatenate((u_lst1, u_lst2[1:]), axis=0)
-    t_lst = np.concatenate((t_lst1, t_lst2_shifted[1:]), axis=0)
+    u_lst = np.concatenate((u_lst1, u_lst2[1:], u_lst3[1:]), axis=0)
+    t_lst = np.concatenate((t_lst1, t_lst2_shifted[1:], t_lst3_shifted[1:]), axis=0)
+
     fig, (u_val, res) = plt.subplots(1, 2, figsize=(10, 5))
 
     u_val.contourf(X, Y, u_lst[-1])
@@ -284,7 +289,7 @@ X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 # define initial conditions of field variable u
 m = 1
 n = 1
-u0 = np.sin(np.pi * X/Lx) + np.sin(np.pi * Y/Ly)
+u0 = np.sin(np.pi*(X/Lx)) + np.sin(3*np.pi*(X/Lx)) + np.sin(2*np.pi*(Y/Ly)) 
 #u0 = np.sin(np.cos(2*np.pi*(m*X/Lx)) + np.cos(2*np.pi*(n*Y/Ly)))
 
 #u0 = np.cos(2*np.pi*(n*Y/Ly + m*X/Lx)) - np.sin(np.cos(2*np.pi*(m*X/Lx))) - np.cos(np.cos(2*np.pi*(n*Y/Ly)))
@@ -305,23 +310,27 @@ for x in range(nx):
 
 f=0
 
-# E13 found
-'''m = 1
-n = 1
-u0 = np.cos(2*np.pi*(m*X/Lx + n*Y/Ly)) + np.sin(2*np.pi*m*X/Lx)
-f = 0'''
 
-# E13 found 
+# E13 found - 2175.17 0.0 0.0 0.0 2175.17 0.0 901.21 (YAY SAME AS REFERENCE)
 '''m = 1
 n = 1
 u0 = np.cos(2*np.pi*(n*Y/Ly)) + np.sin(2*np.pi*(m*X/Lx))
 f = 0 '''
 
-# potentially E223
+# E13 again 
 '''m = 1
 n = 1
 u0 = np.sin(np.sin(2*np.pi*(m*X/Lx)) + np.cos(2*np.pi*(n*Y/Ly)))
 f = 0'''
+
+# E19 found - 301.96 0.0 0.0 -- 778.95 963.07 0.0 0.0 595.43 0.0 1020.05 (VERY CLOSE TO REFERENCE, flipped e10 and e01)
+'''u0 = np.sin(np.pi*(X/Lx)) + np.sin(3*np.pi*(X/Lx)) + np.sin(2*np.pi*(Y/Ly)) '''
+
+# converging  new solution
+'''u0 = np.sin(np.pi * X/Lx) + np.sin(np.pi * Y/Ly)'''
+
+# might be E285???
+'''u0 = np.sin(np.pi*(X/Lx)) + np.cos(np.pi*(X/Lx)) + np.sin(np.pi*(Y/Ly)) + np.cos(np.pi*(Y/Ly)) '''
 
 # display initial conditions
 fig, (u0_ax, R0_ax, G0_ax) = plt.subplots(1, 3, figsize=(15, 5))
@@ -336,6 +345,6 @@ G0_ax.set_title("Initial G")
 plt.show()
 
 # call to main function to execute descent
-u_lst1, t_lst1 = main(u0, adj_rtol=1e-6, adj_atol=1e-6, T=200, dt=1)
+u_lst1, t_lst1 = main(u0, T1=50, T2=300, T3=5000)
 
 print(get_R(u_lst1[-1]))
