@@ -291,7 +291,7 @@ X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 # define initial conditions of field variable u
 m = 1
 n = 1
-u0 = np.cos(np.pi*X/Lx) + np.cos(np.pi*(-X/Lx + 2*Y/Ly)) + np.cos(np.pi*(-X/Lx - 2*Y/Ly))
+u0 = np.sin(3*np.pi*X/Lx) + np.sin(np.pi*(-2*X/Lx + Y/Ly)) + np.sin(np.pi*(-3*X/Lx - Y/Ly))
 
 #u0 = np.cos(2*np.pi*(n*Y/Ly + m*X/Lx)) - np.sin(np.cos(2*np.pi*(m*X/Lx))) - np.cos(np.cos(2*np.pi*(n*Y/Ly)))
 
@@ -327,6 +327,9 @@ f=0
 # E19 found - 0.0 0.0 301.96 -- 778.95 963.07 0.0 0.0 595.43 0.0 1020.05 (SAME AS REF)
 '''u0 = np.sin(np.pi*(X/Lx)) + np.sin(3*np.pi*(X/Lx)) + np.sin(2*np.pi*(Y/Ly)) '''
 
+# E34 found - 0.0 404.94 1549.46 -- 368.01 615.94 170.16 778.19 826.38 198.7 146.1 (SAME AS REF)
+'''u0 = np.sin(np.pi*X/Lx) + np.sin(np.pi*(-2*X/Lx + Y/Ly)) + np.sin(np.pi*(-2*X/Lx - Y/Ly))'''
+
 # converging  new solution
 '''u0 = np.sin(np.pi * X/Lx) + np.sin(np.pi * Y/Ly)'''
 
@@ -352,7 +355,7 @@ fig.colorbar(G0_cont)
 plt.show()
 
 # call to main function to execute descent
-u_lst1, t_lst1 = main(u0, T1=10, T2=100, T3=3000, tol1=1e-8, tol2=1e-10, tol3=1e-14)
+u_lst1, t_lst1 = main(u0, T1=10, T2=100, T3=25000, tol1=1e-8, tol2=1e-10, tol3=1e-14)
 #u_lst2, t_lst2 = main(u_lst1[-1], T1=50, T2=1500, T3=5000)
 
 print(u_lst1[-1])
