@@ -195,7 +195,7 @@ def compute_residuals(t_lst, u_lst):
 ###############################################################################################
 
 def plot_data(u_lst, t_lst) -> None:
-    
+    '''
     def update():
         pass
     
@@ -224,7 +224,7 @@ def plot_data(u_lst, t_lst) -> None:
 
     fig.tight_layout()
     plt.show()
-
+'''
 ###############################################################################################
 
 def main(u0, T1, T2, T3, tol1, tol2, tol3):
@@ -293,7 +293,7 @@ X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 # define initial conditions of field variable u
 m = 1
 n = 1
-u0 = np.sin(2*np.pi*(X/Lx)) + np.sin(2*np.pi*(Y/Ly)) + np.sin(np.pi*(X/Lx)) + np.sin(np.pi*(Y/Ly))
+u0 = np.sin(np.pi*(X/Lx - Y/Ly)) - np.sin(np.pi*(Y/Ly)) 
 f=0
 #u0 = np.cos(2*np.pi*(n*Y/Ly + m*X/Lx)) - np.sin(np.cos(2*np.pi*(m*X/Lx))) - np.cos(np.cos(2*np.pi*(n*Y/Ly)))
 
@@ -304,6 +304,9 @@ f=0
 
 # E7 found - 0.0 0.0 0.0 0.0 0.0 0.0 1292.97 (SAME AS REF)
 '''u0 = np.sin(2*np.pi*(X/Lx)) + np.sin(3*np.pi*(Y/Ly)) + np.cos(2*np.pi*(X/Lx+Y/Ly))'''
+
+# E9 found - 0.0 0.0 0.0 -- 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+'''u0 = np.sin(np.pi*(X/Lx + Y/Ly)) - np.sin(2*np.pi*(Y/Ly)) '''
 
 # E10 found - 0.0 788.4 1869.96 0.0 0.0 788.4 0.0 (SAME AS REF)
 '''u0 = np.sin(np.pi*(-X/Lx + Y/Ly)) - np.sin(3*np.pi*(-X/Lx)) - np.cos(3*np.pi*(Y/Ly))'''
@@ -357,7 +360,7 @@ fig.colorbar(G0_cont)
 plt.show()
 
 # call to main function to execute descent
-u_lst1, t_lst1 = main(u0, T1=10, T2=100, T3=30000, tol1=1e-8, tol2=1e-10, tol3=1e-14)
+u_lst1, t_lst1 = main(u0, T1=10, T2=100, T3=50000, tol1=1e-8, tol2=1e-10, tol3=1e-14)
 #u_lst2, t_lst2 = main(u_lst1[-1], T1=50, T2=1500, T3=5000)
 
 print(u_lst1[-1])
