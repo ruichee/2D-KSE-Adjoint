@@ -293,7 +293,7 @@ X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 # define initial conditions of field variable u
 m = 1
 n = 1
-u0 = np.cos(2*np.pi*(X/Lx)) + np.cos(2*np.pi*(Y/Ly)) + np.cos(3*np.pi*(X/Lx))
+u0 = np.cos(np.pi*(X/Lx)) - np.cos(2*np.pi*(Y/Ly)) + np.cos(3*np.pi*(X/Lx)) + np.cos(3*np.pi*(Y/Ly)) 
 f=0
 #u0 = np.cos(2*np.pi*(n*Y/Ly + m*X/Lx)) - np.sin(np.cos(2*np.pi*(m*X/Lx))) - np.cos(np.cos(2*np.pi*(n*Y/Ly)))
 
@@ -334,7 +334,10 @@ f=0
 '''u0 = np.sin(3*np.pi*Y/Ly) + np.sin(np.pi*(X/Lx - Y/Ly)) + np.sin(np.pi*(X/Lx + Y/Ly))'''
 
 # E231 found - 1459.68 1816.42 1459.68 -- 719.75 87.59 21.08 347.97 719.75 87.59 234.69 (SAME AS REF)
-'''u0 = np.sin(np.pi*(X/Lx + Y/Ly)) - np.sin(np.pi*(X/Lx - Y/Ly)) + np.sin(np.pi*(Y/Ly)) '''
+'''u0 = np.sin(np.pi*(X/Lx + Y/Ly)) - np.sin(np.pi*(X/Lx - Y/Ly)) + np.sin(np.pi*(Y/Ly)) '''\
+
+# E234 found - 664.18 231.42 1469.74 -- 173.3 35.9 13.51 2.46 259.38 176.31 38.56 (CLOSE TO REF)
+'''u0 = np.cos(np.pi*(X/Lx)) - np.cos(2*np.pi*(Y/Ly)) + np.cos(3*np.pi*(X/Lx)) + np.cos(3*np.pi*(Y/Ly)) '''
 
 # E248 found - 1628.9 0.0 0.0 -- 0.0 928.97 0.0 0.0 681.56 0.0 1137.79
 '''u0 = np.sin(3*np.pi*Y/Ly) - np.sin(2*np.pi*(X/Lx - Y/Ly)) + np.sin(2*np.pi*(X/Lx + Y/Ly))'''
@@ -344,6 +347,9 @@ f=0
 
 # another new solution - 0.0 0.0 0.0 485.41 193.83 0.0 0.0
 '''u0 = np.sin(4* np.pi * X/Lx) + np.sin(2 * np.pi * X/Ly) + np.sin(3* np.pi * (Y/Ly+X/Lx) )'''
+
+# new solution - 2727.57 475.75 2727.57 -- 145.15 195.94 885.87 536.15 145.15 195.94 429.09
+'''u0 = np.cos(np.pi*(X/Lx)) + np.cos(np.pi*(Y/Ly)) + np.cos(3*np.pi*(X/Lx)) + np.cos(3*np.pi*(Y/Ly)) '''
 
 # might be E285???
 '''u0 = np.sin(np.pi*(X/Lx)) + np.cos(np.pi*(X/Lx)) + np.sin(np.pi*(Y/Ly)) + np.cos(np.pi*(Y/Ly)) '''
@@ -366,7 +372,7 @@ fig.colorbar(G0_cont)
 plt.show()
 
 # call to main function to execute descent
-u_lst1, t_lst1 = main(u0, T1=10, T2=100, T3=15000, tol1=1e-8, tol2=1e-10, tol3=1e-14)
+u_lst1, t_lst1 = main(u0, T1=10, T2=100, T3=200000, tol1=1e-8, tol2=1e-10, tol3=1e-14)
 #u_lst2, t_lst2 = main(u_lst1[-1], T1=50, T2=1500, T3=5000)
 
 print(u_lst1[-1])
