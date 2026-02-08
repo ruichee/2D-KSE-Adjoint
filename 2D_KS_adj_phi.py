@@ -194,39 +194,6 @@ def compute_residuals(t_lst, u_lst):
 
 ###############################################################################################
 
-def plot_data(u_lst, t_lst) -> None:
-    '''
-    def update():
-        pass
-    
-    # animate convergence
-    #ani = FuncAnimation(fig=fig, frames=update)
-
-    fig, (u_val, res) = plt.subplots(1, 2, figsize=(10, 5))
-
-    #[u_val.plot(u_lst[i]) for i in range(1, len(u_lst))]
-    global x
-    u_val.plot(x, u_lst[-1])
-    u_val.plot(x, u_lst[0], linestyle='--', color='red')
-    u_val.set_xlabel('x')
-    u_val.set_ylabel('u')
-    u_val.set_title('Steady Solution of 1D KS Equation')
-    u_val.set_xlim(0, L)
-    u_val.grid()
-    
-    G_lst = compute_residuals(u_lst)
-    res.plot(t_lst, G_lst)
-    res.semilogy()
-    res.set_xlabel('τ')
-    res.set_title('Residual of Adjoint Norm ||G(u)||')
-    res.set_xlim(0, t_lst[-1])
-    res.grid()
-
-    fig.tight_layout()
-    plt.show()
-'''
-###############################################################################################
-
 def plot_init(u0) -> None:
 
     # setup axis and figure
@@ -254,6 +221,33 @@ def plot_init(u0) -> None:
 
 ###############################################################################################
 
+def plot_final(u_lst, t_lst) -> None:
+
+    fig, (u_val, res) = plt.subplots(1, 2, figsize=(12, 5))
+    
+    # extract final u field
+    u_final = u_lst[-1]
+    np.nan_to_num(u_final, nan=0)
+
+    # plot u field
+    u_cont = u_val.contourf(X, Y, u_final)
+    u_val.set_xlabel('x')
+    u_val.set_ylabel('y')
+    fig.colorbar(u_cont)
+
+    # plot residuals
+    G_lst = compute_residuals(t_lst, u_lst)
+    res.plot(t_lst, G_lst)
+    res.semilogy()
+    res.set_xlabel('τ')
+    res.set_title('Residual (RMS of G(u))')
+    res.set_xlim(0, t_lst[-1])
+    res.grid()
+
+    plt.show()
+
+###############################################################################################
+
 def main(u0, T1, T2, T3, tol1, tol2, tol3):
 
     # plot initial fields
@@ -277,13 +271,10 @@ def main(u0, T1, T2, T3, tol1, tol2, tol3):
     # Slicing [1:] removes the duplicate starting point (t=3) from the second run
     u_lst = np.concatenate((u_lst1, u_lst2[1:], u_lst3[1:]), axis=0)
     t_lst = np.concatenate((t_lst1, t_lst2_shifted[1:], t_lst3_shifted[1:]), axis=0)
-
-    fig, (u_val, res) = plt.subplots(1, 2, figsize=(12, 5))
     
+    # extract final u field
     u_final = u_lst[-1]
     np.nan_to_num(u_final, nan=0)
-    u_cont = u_val.contourf(X, Y, u_final)
-    fig.colorbar(u_cont)
 
     # check fourier values
     u_k = np.fft.fft2(u_final)
@@ -294,19 +285,11 @@ def main(u0, T1, T2, T3, tol1, tol2, tol3):
           func(1, 3), func(2, 0), func(2, 1), func(2, 2))
     print()
 
-    # plot residuals
-    G_lst = compute_residuals(t_lst, u_lst)
-    res.plot(t_lst, G_lst)
-    res.semilogy()
-    res.set_xlabel('τ')
-    res.set_title('Residual (RMS of G(u))')
-    res.set_xlim(0, t_lst[-1])
-    res.grid()
+    # plot own results 
+    plot_final(u_lst, t_lst)
 
-    plt.show()
-
-    # plot own results (integrated non-conservative form)
-    #plot_data(u_lst, t_lst)
+    # save entire u_final array data to output_u.csv file
+    np.savetxt('output_u.csv', u_final, delimiter=',', fmt='%.2f')
     
     return u_lst, t_lst
 
@@ -322,11 +305,8 @@ u_tol = 1e-8                    # tolerance for converged u
 X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 
 # define initial conditions of field variable u
-m = 1
-n = 1
 u0 = np.cos(np.pi*(X/Lx + Y/Ly)) + np.cos(np.pi*(X/Lx)) + np.cos(np.pi*(Y/Ly)) 
-f=0
-u0 = np.cos(2*np.pi*(n*Y/Ly + m*X/Lx)) - np.sin(np.cos(2*np.pi*(m*X/Lx))) - np.cos(np.cos(2*np.pi*(n*Y/Ly)))
+f = 0
 
 # define iteration time variables
 T1, tol1 = 10, 1e-8
@@ -335,8 +315,3 @@ T3, tol3 = 2000, 1e-14
 
 # call to main function to execute descent
 u_lst1, t_lst1 = main(u0, T1=T1, T2=T2, T3=T3, tol1=tol1, tol2=tol2, tol3=tol3)
-
-print("\nFinal u(x,y)")
-print(u_lst1[-1])
-print("\nFinal G(u)")
-print(get_G(t_lst1[-1], u_lst1[-1]))
