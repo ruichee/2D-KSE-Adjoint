@@ -1,13 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
-from matplotlib.animation import FuncAnimation
 from tqdm import tqdm
 
 
 ###############################################################################################
 
-def get_vars(Lx, Ly, nx, ny):
+def get_vars(Lx: float, Ly: float, nx: int, ny: int) -> tuple[np.ndarray[any, float],...]:
 
     dx = Lx/nx                                  # define x spatial step
     dy = Ly/ny                                  # define x spatial step
@@ -21,11 +20,11 @@ def get_vars(Lx, Ly, nx, ny):
     KX, KY = np.meshgrid(kx, ky)                # meshgrid of all combinations of kx and ky waves
     X, Y = np.meshgrid(x, y)                    # meshgrid of all combinations of x and y values
     
-    return (X, KX, Y, KY)                       # NOTE: L-dx ensure no cutting into next period
+    return X, KX, Y, KY                         # NOTE: L-dx ensure no cutting into next period
 
 ###############################################################################################
 
-def dealiase(ff):
+def dealiase(ff) -> np.ndarray:
     
     global KX, KY
 
@@ -42,7 +41,7 @@ def dealiase(ff):
 
 ###############################################################################################
 
-def get_R(u): 
+def get_R(u: np.ndarray[tuple[int, int], float]) -> np.ndarray[tuple[int, int], float]: 
 
     global KX, KY, f
 
@@ -77,7 +76,7 @@ def get_R(u):
 
 ###############################################################################################
 
-def get_G(t, u, print_res=False):
+def get_G(t: float, u: np.ndarray[tuple[int, int], float], print_res=False) -> np.ndarray[tuple[int, int], float]:
 
     global KX, KY, f
 
@@ -114,6 +113,7 @@ def get_G(t, u, print_res=False):
     R_xxyy = np.fft.ifft2(KX**2 * KY**2 * R_f)
     lin_term = R_xx + R_yy + R_xxxx + R_yyyy + 2*R_xxyy
 
+    # add all terms together in fourier space
     G_f = np.fft.fft2(non_lin_term_1 + non_lin_term_2 + lin_term)
     G_f = dealiase(G_f)
 
@@ -121,8 +121,10 @@ def get_G(t, u, print_res=False):
     mask = (KX==0) * (KY==0)
     G_f = np.where(mask, 0, G_f)
 
+    # convert back to physical space
     G = np.real(np.fft.ifft2(G_f))
 
+    # print to track iteration progress, use to check for sticking points
     if print_res:
         print(f"time: {t}, norm: {np.linalg.norm(G) / np.sqrt(nx*ny)}")
 
@@ -151,7 +153,7 @@ steady_state_event.direction = -1   # Only trigger when going from positive -> n
 
 ###############################################################################################
 
-def adj_descent(u0, rtol, atol, T, dt):
+def adj_descent(u0: np.ndarray[tuple[int, int], float], rtol: float, atol: float, T: int, dt: float) -> tuple[list, list]:
 
     global f, nx, ny
 
@@ -159,16 +161,16 @@ def adj_descent(u0, rtol, atol, T, dt):
     nt = int(T / dt) + 1  
     tspan = np.linspace(0, T, nt)
 
-    # Integration: use solve_ivp with method='BDF' to mimic ode15s (stiff solver)
+    # Integration: use solve_ivp with method='BDF' (stiff system solver)
     solution = solve_ivp(
-        fun=lambda t,u: \
+        fun=lambda t, u: 
             get_G(t, u.reshape(nx, ny), print_res=True)
             .flatten(),                     # function that returns du/dt
         t_span=(0, T),                      # (start_time, end_time)
         y0=u0.flatten(),                    # Initial condition
-        method='BDF',                       # 'BDF' or 'Radau' - implicit adaptive time stepping
+        method='BDF',                       # 'BDF' or 'Radau' - implicit + adaptive time stepping
         #events=steady_state_event,         # check if ||G(u)|| < tol, can end iteration early
-        t_eval=tspan,                       # The specific time points returned
+        t_eval=tspan,                       # The specific time steps returned
         rtol=rtol,                          # Relative tolerance
         atol=atol                           # Absolute tolerance
     )
@@ -176,17 +178,18 @@ def adj_descent(u0, rtol, atol, T, dt):
     # Extract the output list of iteration values
     u_lst = np.array([u.reshape(nx, ny) for u in solution.y.T])
     t_lst = solution.t.T
-
-    # check for convergence
     return u_lst, t_lst
 
 ###############################################################################################
 
-def compute_residuals(t_lst, u_lst):
+def compute_residuals(t_lst: list, u_lst: list[np.ndarray[tuple[int, int], float]]):
 
     global nx, ny
+
+    # initialize list for residual values (RMS of G(u)) at each time step
     G_lst = np.zeros(len(u_lst))
 
+    # iterate through u at each time step to find corresponding RMS of G(u), with progress bar
     for i in tqdm(range(len(u_lst))):
         G_lst[i] = np.linalg.norm(get_G(t_lst[i], u_lst[i])) / np.sqrt(nx*ny)
 
@@ -194,7 +197,7 @@ def compute_residuals(t_lst, u_lst):
 
 ###############################################################################################
 
-def plot_init(u0) -> None:
+def plot_init(u0: np.ndarray[tuple[int, int], float]) -> None:
 
     # setup axis and figure
     fig, (u0_ax, R0_ax, G0_ax) = plt.subplots(1, 3, figsize=(15, 4))
@@ -216,12 +219,12 @@ def plot_init(u0) -> None:
     fig.colorbar(R0_cont)
     fig.colorbar(G0_cont)
 
-    # display plots
+    # display plots for u, G, R at initialization
     plt.show()
 
 ###############################################################################################
 
-def plot_final(u_lst, t_lst) -> None:
+def plot_final(u_lst: np.ndarray[tuple[int, int], float], t_lst) -> None:
 
     fig, (u_val, res) = plt.subplots(1, 2, figsize=(12, 5))
     
@@ -248,7 +251,8 @@ def plot_final(u_lst, t_lst) -> None:
 
 ###############################################################################################
 
-def main(u0, T1, T2, T3, tol1, tol2, tol3):
+def main(u0: np.ndarray[tuple[int, int], float], 
+         T1: int, T2: int, T3: int, tol1: float, tol2: float, tol3: float) -> None:
 
     # plot initial fields
     plot_init(u0)
@@ -285,13 +289,11 @@ def main(u0, T1, T2, T3, tol1, tol2, tol3):
           func(1, 3), func(2, 0), func(2, 1), func(2, 2))
     print()
 
-    # plot own results 
+    # plot final results 
     plot_final(u_lst, t_lst)
 
     # save entire u_final array data to output_u.csv file
     np.savetxt('output_u.csv', u_final, delimiter=',', fmt='%.2f')
-    
-    return u_lst, t_lst
 
 ###############################################################################################
 
