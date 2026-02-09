@@ -305,13 +305,13 @@ u_tol = 1e-8                    # tolerance for converged u
 X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 
 # define initial conditions of field variable u
-u0 = np.cos(np.pi*(X/Lx + Y/Ly)) + np.cos(np.pi*(X/Lx)) + np.cos(np.pi*(Y/Ly)) 
+u0 = np.sin(2*np.pi*(X/Lx)) + np.cos(2*np.pi*(Y/Ly))
 f = 0
 
 # define iteration time variables
 T1, tol1 = 10, 1e-8
 T2, tol2 = 100, 1e-10
-T3, tol3 = 2000, 1e-14
+T3, tol3 = 5000, 1e-14
 
 # call to main function to execute descent
 u_lst1, t_lst1 = main(u0, T1=T1, T2=T2, T3=T3, tol1=tol1, tol2=tol2, tol3=tol3)
