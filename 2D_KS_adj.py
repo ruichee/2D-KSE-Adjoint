@@ -187,13 +187,16 @@ def compute_residuals(t_lst: list, u_lst: list[np.ndarray[tuple[int, int], float
     global nx, ny
 
     # initialize list for residual values (RMS of G(u)) at each time step
-    G_lst = np.zeros(steps)
+    steps = min(steps, len(u_lst))
+    G_lst_trunc = np.zeros(steps)
+    t_lst_trunc = np.zeros(steps)
 
     # iterate through u at each time step to find corresponding RMS of G(u), with progress bar
-    for i in tqdm(range(0, len(u_lst), len(u_lst)//100)):
-        G_lst[i] = np.linalg.norm(get_G(t_lst[i], u_lst[i])) / np.sqrt(nx*ny)
+    for i in tqdm(np.arange(0, len(u_lst), len(u_lst)//steps)):
+        G_lst_trunc[i] = np.linalg.norm(get_G(t_lst[i], u_lst[i])) / np.sqrt(nx*ny)
+        t_lst_trunc[i] = t_lst[i]
 
-    return G_lst
+    return t_lst_trunc, G_lst_trunc
 
 ###############################################################################################
 
@@ -239,12 +242,12 @@ def plot_final(u_lst: np.ndarray[tuple[int, int], float], t_lst) -> None:
     fig.colorbar(u_cont)
 
     # plot residuals
-    G_lst = compute_residuals(t_lst, u_lst)
-    res.plot(t_lst, G_lst)
+    t_lst_trunc, G_lst_trunc = compute_residuals(t_lst, u_lst)
+    res.plot(t_lst_trunc, G_lst_trunc)
     res.semilogy()
     res.set_xlabel('τ')
     res.set_title('Residual (RMS of G(u))')
-    res.set_xlim(0, t_lst[-1])
+    res.set_xlim(0, t_lst_trunc[-1])
     res.grid()
 
     plt.show()
@@ -252,11 +255,24 @@ def plot_final(u_lst: np.ndarray[tuple[int, int], float], t_lst) -> None:
 ###############################################################################################
 
 def main(u0: np.ndarray[tuple[int, int], float], 
-         T1: int, T2: int, T3: int, tol1: float, tol2: float, tol3: float) -> None:
+         stages: tuple[tuple[int, float]]) -> None:
 
     # plot initial fields
     plot_init(u0)
 
+    u_prev = u0
+    u_lst = [u0]
+    t_lst = [0]
+
+    for T, tol in stages:
+        u_lst1, t_lst1 = adj_descent(u_prev, tol, tol, T=T, dt=1)
+        u_prev = u_lst1[-1]
+
+        t_lst1_shifted = t_lst1 + t_lst[-1] + dt
+        u_lst = np.concatenate((u_lst, u_lst1[1:]), axis=0)
+        t_lst = np.concatenate((t_lst, t_lst1_shifted), axis=0)
+
+    '''
     # Run 1
     u_lst1, t_lst1 = adj_descent(u0, tol1, tol1, T=T1, dt=1)
     
@@ -275,7 +291,7 @@ def main(u0: np.ndarray[tuple[int, int], float],
     # Slicing [1:] removes the duplicate starting point (t=3) from the second run
     u_lst = np.concatenate((u_lst1, u_lst2[1:], u_lst3[1:]), axis=0)
     t_lst = np.concatenate((t_lst1, t_lst2_shifted[1:], t_lst3_shifted[1:]), axis=0)
-    
+    '''
     # extract final u field
     u_final = u_lst[-1]
     np.nan_to_num(u_final, nan=0)
@@ -314,7 +330,10 @@ f = 0
 # define iteration time variables
 T1, tol1 = 50, 1e-8
 T2, tol2 = 500, 1e-10
-T3, tol3 = 200000, 1e-16
+T3, tol3 = 5000, 1e-12
+T4, tol4 = 30000, 1e-14
+T5, tol5 = 150000, 1e-16
+stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5))
 
 # call to main function to execute descent
-main(u0, T1=T1, T2=T2, T3=T3, tol1=tol1, tol2=tol2, tol3=tol3)
+main(u0, stages=stages)
