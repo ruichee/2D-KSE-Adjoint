@@ -182,15 +182,15 @@ def adj_descent(u0: np.ndarray[tuple[int, int], float], rtol: float, atol: float
 
 ###############################################################################################
 
-def compute_residuals(t_lst: list, u_lst: list[np.ndarray[tuple[int, int], float]]):
+def compute_residuals(t_lst: list, u_lst: list[np.ndarray[tuple[int, int], float]], steps: int =100):
 
     global nx, ny
 
     # initialize list for residual values (RMS of G(u)) at each time step
-    G_lst = np.zeros(len(u_lst))
+    G_lst = np.zeros(steps)
 
     # iterate through u at each time step to find corresponding RMS of G(u), with progress bar
-    for i in tqdm(range(len(u_lst))):
+    for i in tqdm(range(0, len(u_lst), len(u_lst)//100)):
         G_lst[i] = np.linalg.norm(get_G(t_lst[i], u_lst[i])) / np.sqrt(nx*ny)
 
     return G_lst
@@ -307,13 +307,14 @@ u_tol = 1e-8                    # tolerance for converged u
 X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 
 # define initial conditions of field variable u
-u0 = np.sin(2*np.pi*(X/Lx)) + np.cos(2*np.pi*(Y/Ly))
+u0 = np.sin(2*np.pi*(X/Lx)) - np.sin(np.pi*(Y/Ly)) + np.sin(np.pi*(X/Lx - Y/Ly)) + np.sin(np.pi*(X/Lx + Y/Ly)) 
 f = 0
+#u0 = np.loadtxt("output_u.csv", delimiter=',')
 
 # define iteration time variables
-T1, tol1 = 10, 1e-8
-T2, tol2 = 100, 1e-10
-T3, tol3 = 5000, 1e-14
+T1, tol1 = 50, 1e-8
+T2, tol2 = 500, 1e-10
+T3, tol3 = 200000, 1e-16
 
 # call to main function to execute descent
-u_lst1, t_lst1 = main(u0, T1=T1, T2=T2, T3=T3, tol1=tol1, tol2=tol2, tol3=tol3)
+main(u0, T1=T1, T2=T2, T3=T3, tol1=tol1, tol2=tol2, tol3=tol3)
