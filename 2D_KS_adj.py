@@ -215,9 +215,9 @@ def plot_init(u0: np.ndarray[tuple[int, int], float]) -> None:
     G = get_G(0, u0)
 
     # plot contours 
-    u0_cont = u0_ax.contourf(X, Y, u0)
-    R0_cont = R0_ax.contourf(X, Y, R)
-    G0_cont = G0_ax.contourf(X, Y, G)
+    u0_cont = u0_ax.contourf(X, Y, u0, antialised=True)
+    R0_cont = R0_ax.contourf(X, Y, R, antialised=True)
+    G0_cont = G0_ax.contourf(X, Y, G, antialised=True)
 
     # set titles and add colorbars
     u0_ax.set_title("Initial u")
@@ -241,7 +241,7 @@ def plot_final(u_lst: np.ndarray[tuple[int, int], float], t_lst) -> None:
     np.nan_to_num(u_final, nan=0)
 
     # plot u field
-    u_cont = u_val.contourf(X, Y, u_final)
+    u_cont = u_val.contourf(X, Y, u_final, antialised=True)
     u_val.set_xlabel('x')
     u_val.set_ylabel('y')
     fig.colorbar(u_cont)
@@ -329,8 +329,7 @@ dt = 1                          # iteration step
 X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 
 # define initial conditions of field variable u
-u0 = np.sin(np.pi*X/Lx + np.sin(np.pi*(Y/Ly + X/Lx))) 
-#u0 = np.sin(2*np.pi*X/Lx + np.sin(2*np.pi*Y/Ly))
+u0 = np.exp( -2.0 * (np.cos(np.pi*(X/Lx+0.5)) + np.cos(np.pi*(Y/Ly-0.5))) )
 f = 0
 #u0 = np.loadtxt("output_u.csv", delimiter=',')
 
@@ -338,8 +337,8 @@ f = 0
 T1, tol1 = 10, 1e-8
 T2, tol2 = 100, 1e-10
 T3, tol3 = 1000, 1e-12
-T4, tol4 = 30000, 1e-14
-T5, tol5 = 150000, 1e-16
+T4, tol4 = 10000, 1e-14
+T5, tol5 = 10000, 1e-16
 stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5))
 stage = 0
 

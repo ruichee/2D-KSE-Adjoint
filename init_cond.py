@@ -13,6 +13,9 @@
 # E7 found - 0.0 0.0 0.0 0.0 0.0 0.0 1292.97 
 '''u0 = np.sin(2*np.pi*(X/Lx)) + np.sin(3*np.pi*(Y/Ly)) + np.cos(2*np.pi*(X/Lx+Y/Ly))'''
 
+# E8 found - 0.0 0.0 0.0 -- 0.0 0.0 0.0 1394.57 0.0 0.0 318.76
+'''u0 = np.sin(2*np.pi*X/Lx + np.sin(np.pi*(Y/Ly + X/Lx))) '''
+
 # E9 found - 0.0 0.0 0.0 -- 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
 '''u0 = np.sin(np.pi*(X/Lx + Y/Ly)) - np.sin(2*np.pi*(Y/Ly)) '''
 
@@ -61,6 +64,8 @@
 
 # E248 found - 1628.9 0.0 0.0 -- 0.0 928.97 0.0 0.0 681.56 0.0 1137.79
 '''u0 = np.sin(3*np.pi*Y/Ly) - np.sin(2*np.pi*(X/Lx - Y/Ly)) + np.sin(2*np.pi*(X/Lx + Y/Ly))'''
+
+# E301 found - 
 
 ##################################### NEW SOLUTIONS FOUND ##########################################
 
