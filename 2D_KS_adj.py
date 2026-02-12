@@ -126,7 +126,7 @@ def get_G(t: float, u: np.ndarray[tuple[int, int], float], print_res=False) -> n
 
     # print to track iteration progress, use to check for sticking points
     if print_res:
-        print(f"stage: {stage}, time: {t}, norm: {np.linalg.norm(G) / np.sqrt(nx*ny)}")
+        print(f"stage: {stage}, \t time: {t}, \t norm: {np.linalg.norm(G) / np.sqrt(nx*ny)}")
 
     return G
 
@@ -329,7 +329,7 @@ dt = 1                          # iteration step
 X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 
 # define initial conditions of field variable u
-u0 = np.sin(np.pi*X/Lx + np.sin(np.pi*Y/Ly)) + np.cos(np.pi*(Y/Ly))
+u0 = np.sin(np.pi*X/Lx + np.sin(np.pi*(Y/Ly + X/Lx))) 
 #u0 = np.sin(2*np.pi*X/Lx + np.sin(2*np.pi*Y/Ly))
 f = 0
 #u0 = np.loadtxt("output_u.csv", delimiter=',')
@@ -338,8 +338,8 @@ f = 0
 T1, tol1 = 10, 1e-8
 T2, tol2 = 100, 1e-10
 T3, tol3 = 1000, 1e-12
-T4, tol4 = 10000, 1e-14
-T5, tol5 = 100000, 1e-16
+T4, tol4 = 30000, 1e-14
+T5, tol5 = 150000, 1e-16
 stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5))
 stage = 0
 
