@@ -241,7 +241,7 @@ def plot_final(u_lst: np.ndarray[tuple[int, int], float], t_lst) -> None:
     np.nan_to_num(u_final, nan=0)
 
     # plot u field
-    u_cont = u_val.contourf(X, Y, u_final, antialised=True)
+    u_cont = u_val.contourf(X, Y, u_final, antialised=True, levels=7)
     u_val.set_xlabel('x')
     u_val.set_ylabel('y')
     fig.colorbar(u_cont)
@@ -260,7 +260,7 @@ def plot_final(u_lst: np.ndarray[tuple[int, int], float], t_lst) -> None:
 ###############################################################################################
 
 def main(u0: np.ndarray[tuple[int, int], float], 
-         stages: tuple[tuple[int, float]]) -> None:
+         stages: tuple[tuple[int, float]], dt) -> None:
 
     # plot initial fields
     plot_init(u0)
@@ -272,13 +272,14 @@ def main(u0: np.ndarray[tuple[int, int], float],
     global stage 
     for T, tol in stages:
         stage += 1
-        u_lst1, t_lst1 = adj_descent(u_prev, tol, tol, T=T, dt=1)
+        u_lst1, t_lst1 = adj_descent(u_prev, tol, tol, T=T, dt=dt)
         u_prev = u_lst1[-1]
 
         t_lst1_shifted = t_lst1 + t_lst[-1] 
         u_lst = np.concatenate((u_lst, u_lst1[1:]), axis=0)
         t_lst = np.concatenate((t_lst, t_lst1_shifted[1:]), axis=0)
 
+    print(len(u_lst))
     '''
     # Run 1
     u_lst1, t_lst1 = adj_descent(u0, tol1, tol1, T=T1, dt=1)
@@ -323,13 +324,13 @@ def main(u0: np.ndarray[tuple[int, int], float],
 # define variables 
 Lx, Ly = 10, 10                 # domain size
 nx, ny = 64, 64                 # number of collocation points
-dt = 1                          # iteration step 
+dt = 100                        # only controls what interval we receive the output u_lst and t_lst to be (actual time step is controlled in solve_ivp)
 
 # obtain domain field (x), and fourier wave numbers kx
 X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 
 # define initial conditions of field variable u
-u0 = np.sin(4*np.pi*X/Lx + np.cos(np.pi*(3*Y/Ly))) + np.sin(4*np.pi*Y/Ly + np.cos(np.pi*(3*X/Lx)))
+u0 = np.cos(np.pi*(X/Lx + Y/Ly)) + np.cos(np.pi*(X/Lx)) + np.cos(np.pi*(Y/Ly))
 f = 0
 #u0 = np.loadtxt("output_u.csv", delimiter=',')
 
@@ -337,10 +338,11 @@ f = 0
 T1, tol1 = 10, 1e-8
 T2, tol2 = 100, 1e-10
 T3, tol3 = 1000, 1e-12
-T4, tol4 = 10000, 1e-14
-T5, tol5 = 20000, 1e-16
-stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5))
+T4, tol4 = 300000, 1e-14
+T5, tol5 = 700000, 1e-16
+T6, tol6 = 200000, 1e-17
+stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5), (T6, tol6))
 stage = 0
 
 # call to main function to execute descent
-main(u0, stages=stages)
+main(u0, stages=stages, dt=dt)
