@@ -338,10 +338,9 @@ f = 0
 T1, tol1 = 10, 1e-8
 T2, tol2 = 100, 1e-10
 T3, tol3 = 1000, 1e-12
-T4, tol4 = 300000, 1e-14
-T5, tol5 = 700000, 1e-16
-T6, tol6 = 200000, 1e-17
-stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5), (T6, tol6))
+T4, tol4 = 10000, 1e-14
+T5, tol5 = 20000, 1e-16
+stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5))
 stage = 0
 
 # call to main function to execute descent
