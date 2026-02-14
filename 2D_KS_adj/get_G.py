@@ -55,6 +55,6 @@ def get_G(t: float, u: np.ndarray[tuple[int, int], float],
 
     # print to track iteration progress, use to check for sticking points
     if print_res:
-        print(f"stage: {input_vars.stage}, \t time: {t}, \t norm: {np.linalg.norm(G) / np.sqrt(nx*ny)}")
+        print(f"stage: {input_vars.stage}, \t time: {t}, \t ||G||: {np.linalg.norm(G) / np.sqrt(nx*ny)}, \t ||R||: {np.linalg.norm(R)}")
 
     return G
