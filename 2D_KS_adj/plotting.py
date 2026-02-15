@@ -44,7 +44,7 @@ class Plotting:
 
     def plot_final(u_lst: np.ndarray[tuple[int, int], float], t_lst) -> None:
 
-        fig, (u_val, res) = plt.subplots(1, 2, figsize=(12, 5))
+        fig, (u_val, G, R) = plt.subplots(1, 3, figsize=(17, 5))
         
         # extract final u field
         u_final = u_lst[-1]
@@ -57,12 +57,19 @@ class Plotting:
         fig.colorbar(u_cont)
 
         # plot residuals
-        t_lst_trunc, G_lst_trunc = compute_residuals(t_lst, u_lst)
-        res.plot(t_lst_trunc, G_lst_trunc)
-        res.semilogy()
-        res.set_xlabel('τ')
-        res.set_title('Residual (RMS of G(u))')
-        res.set_xlim(0, t_lst_trunc[-1])
-        res.grid()
+        t_lst_trunc, R_lst_trunc, G_lst_trunc = compute_residuals(t_lst, u_lst)
+        G.plot(t_lst_trunc, G_lst_trunc)
+        G.semilogy()
+        G.set_xlabel('τ')
+        G.set_title('RMS of G(u)')
+        G.set_xlim(0, t_lst_trunc[-1])
+        G.grid()
+
+        R.plot(t_lst_trunc, R_lst_trunc)
+        R.semilogy()
+        R.set_xlabel('τ')
+        R.set_title('L2-norm ||R(u)||')
+        R.set_xlim(0, t_lst_trunc[-1])
+        R.grid()
 
         plt.show()
