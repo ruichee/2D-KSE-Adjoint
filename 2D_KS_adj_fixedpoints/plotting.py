@@ -25,9 +25,12 @@ class Plotting:
         G = get_G(0, u0)
 
         # plot contours 
-        u0_cont = u0_ax.contourf(X, Y, u0, antialised=True)
-        R0_cont = R0_ax.contourf(X, Y, R, antialised=True)
-        G0_cont = G0_ax.contourf(X, Y, G, antialised=True)
+        u0_contlines = u0_ax.contour(X, Y, u0, colors="black", linewidths=1, linestyles="solid")
+        u0_cont = u0_ax.contourf(X, Y, u0)
+        R0_contlines = R0_ax.contour(X, Y, R, colors="black", linewidths=1, linestyles="solid")
+        R0_cont = R0_ax.contourf(X, Y, R)
+        G0_contlines = G0_ax.contour(X, Y, G, colors="black", linewidths=1, linestyles="solid")
+        G0_cont = G0_ax.contourf(X, Y, G)
 
         # set titles and add colorbars
         u0_ax.set_title("Initial u")
@@ -44,14 +47,15 @@ class Plotting:
 
     def plot_final(u_lst: np.ndarray[tuple[int, int], float], t_lst) -> None:
 
-        fig, (u_val, G, R) = plt.subplots(1, 3, figsize=(17, 5))
+        fig, (u_val, G, R) = plt.subplots(1, 3, figsize=(18, 5))
         
         # extract final u field
         u_final = u_lst[-1]
         np.nan_to_num(u_final, nan=0)
 
         # plot u field
-        u_cont = u_val.contourf(X, Y, u_final, antialised=True, levels=7)
+        u_cont = u_val.contourf(X, Y, u_final)
+        u_val.contour(X, Y, u_final, colors="black", linewidths=1, linestyles="solid")
         u_val.set_xlabel('x')
         u_val.set_ylabel('y')
         fig.colorbar(u_cont)

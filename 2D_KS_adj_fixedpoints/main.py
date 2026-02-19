@@ -1,8 +1,11 @@
 import numpy as np
-from adj_descent import adj_descent
-from plotting import Plotting
 import input_vars
 from input_vars import X, Y, Lx, Ly, dt
+from adj_descent import adj_descent
+from plotting import Plotting
+from scipy.optimize import newton_krylov
+from get_R import get_R
+from NGh import perform_one_NGh_step
 
 
 def main(u0: np.ndarray[tuple[int, int], float], 
@@ -12,8 +15,8 @@ def main(u0: np.ndarray[tuple[int, int], float],
     Plotting.plot_initial(u0)
 
     u_prev = u0
-    u_lst = [u0]
-    t_lst = [0]
+    u_lst = np.array([u0])
+    t_lst = np.array([0])
 
     for T, tol in stages:
         input_vars.stage += 1
@@ -25,11 +28,6 @@ def main(u0: np.ndarray[tuple[int, int], float],
         t_lst1_shifted = t_lst1 + t_lst[-1] 
         u_lst = np.concatenate((u_lst, u_lst1[1:]), axis=0)
         t_lst = np.concatenate((t_lst, t_lst1_shifted[1:]), axis=0)
-
-    '''from scipy.optimize import newton_krylov
-    from get_R import get_R
-    u_final = newton_krylov(lambda u: get_R(0, u), u_lst[-1], iter=100, f_tol=1e-8, method='lgmres', verbose=True)
-    print(np.linalg.norm(get_R(0, u_final)))'''
 
     # extract final u field
     u_final = u_lst[-1]
@@ -48,7 +46,7 @@ def main(u0: np.ndarray[tuple[int, int], float],
     Plotting.plot_final(u_lst, t_lst)
 
     # save entire u_final array data to output_u.csv file
-    np.savetxt(r'2D_KS_adj\fixed_points\output_u.dat', u_final, delimiter=' ', fmt='%.18e')
+    np.savetxt(r'2D_KS_adj_fixedpoints\fixed_points\output_u.dat', u_final, delimiter=' ', fmt='%.18e')
 
 
 if __name__ == "__main__":
@@ -56,17 +54,16 @@ if __name__ == "__main__":
     #print(np.linalg.norm(get_R(0, np.loadtxt(r"2D_KS_adj\fixed_points\output_u.dat", delimiter=" "))))
 
     # define initial conditions of field variable u
-    u0 = np.cos(np.pi*X/Lx) + np.cos(np.pi*(-X/Lx + 2*Y/Ly)) + np.cos(np.pi*(-X/Lx - 2*Y/Ly))
+    u0 = np.sin(np.pi*(X/Lx - 5*Y/Ly)) + np.sin(np.pi*(5*X/Lx + Y/Ly)) + 2*np.sin(np.pi*(X/Lx)) + 2*np.sin(np.pi*(Y/Ly))
     #u0 = np.loadtxt(r"2D_KS_adj\fixed_points\output_u.dat", delimiter=' ')
 
     # define iteration time variables
     T1, tol1 = 10, 1e-8
-    T2, tol2 = 40, 1e-10
-    T3, tol3 = 1000, 1e-12
-    T4, tol4 = 5000, 1e-14
-    T5, tol5 = 10000, 1e-16
+    T2, tol2 = 1000, 1e-12
+    T3, tol3 = 5000, 1e-12
+    T4, tol4 = 30000, 1e-14
+    T5, tol5 = 120000, 1e-16
     T6, tol6 = 10000, 1e-16
     stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5))
-
 
     main(u0, stages, dt)

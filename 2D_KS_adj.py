@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from tqdm import tqdm
+from scipy.optimize import newton_krylov
 
 
 ###############################################################################################
@@ -215,9 +216,12 @@ def plot_init(u0: np.ndarray[tuple[int, int], float]) -> None:
     G = get_G(0, u0)
 
     # plot contours 
-    u0_cont = u0_ax.contourf(X, Y, u0, antialised=True)
-    R0_cont = R0_ax.contourf(X, Y, R, antialised=True)
-    G0_cont = G0_ax.contourf(X, Y, G, antialised=True)
+    u0_contlines = u0_ax.contour(X, Y, u0, colors="black", linewidths=1, linestyles="solid")
+    u0_cont = u0_ax.contourf(X, Y, u0)
+    R0_contlines = R0_ax.contour(X, Y, R, colors="black", linewidths=1, linestyles="solid")
+    R0_cont = R0_ax.contourf(X, Y, R)
+    G0_contlines = G0_ax.contour(X, Y, G, colors="black", linewidths=1, linestyles="solid")
+    G0_cont = G0_ax.contourf(X, Y, G)
 
     # set titles and add colorbars
     u0_ax.set_title("Initial u")
@@ -242,6 +246,7 @@ def plot_final(u_lst: np.ndarray[tuple[int, int], float], t_lst) -> None:
 
     # plot u field
     u_cont = u_val.contourf(X, Y, u_final, antialised=True, levels=7)
+    u_val.contour(X, Y, u_final, colors="black", linewidths=1, linestyles="solid")
     u_val.set_xlabel('x')
     u_val.set_ylabel('y')
     fig.colorbar(u_cont)
@@ -330,17 +335,16 @@ dt = 100                        # only controls what interval we receive the out
 X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 
 # define initial conditions of field variable u
-u0 = np.sin(np.sin(np.pi*(X/Lx))) + np.sin(np.sin(np.pi*(Y/Ly))) + np.cos(np.cos(np.pi*(2*X/Lx))) + np.cos(np.cos(np.pi*(2*Y/Ly)))
-
+u0 = np.cos(np.pi*X/Lx) + np.cos(np.pi*(-X/Lx + 2*Y/Ly)) + np.cos(np.pi*(-X/Lx - 2*Y/Ly))
 f = 0
 #u0 = np.loadtxt("output_u.csv", delimiter=',')
 
 # define iteration time variables
-T1, tol1 = 50, 1e-8
-T2, tol2 = 500, 1e-10
-T3, tol3 = 5000, 1e-12
-T4, tol4 = 50000, 1e-14
-T5, tol5 = 150000, 1e-16
+T1, tol1 = 10, 1e-8
+T2, tol2 = 40, 1e-10
+T3, tol3 = 100, 1e-12
+T4, tol4 = 200, 1e-14
+T5, tol5 = 700, 1e-16
 stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5))
 stage = 0
 

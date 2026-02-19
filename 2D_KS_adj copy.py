@@ -180,22 +180,7 @@ def adj_descent_step(u0: np.ndarray[tuple[int, int], float], rtol: float, atol: 
     u_lst = np.array([u.reshape(nx, ny) for u in solution.y.T])
     t_lst = solution.t.T
 
-    u_new = newton_krylov(
-        get_R, 
-        u_lst[-1], 
-        f_tol=1e-12,  
-        method='gmres', 
-        # 1. KILL THE LINE SEARCH: Force it to take the full Newton step
-        line_search=None, 
-        # 2. TIGHTEN THE INNER SOLVER: Force GMRES to be highly accurate
-        inner_tol=1e-10,   
-        # 3. INCREASE MAX INNER ITERATIONS: Give GMRES time to untangle the null space
-        inner_maxiter=50, 
-        iter=N,      
-        verbose=True
-    )
-
-    return u_new
+    return u_lst[-1]
 
 ###############################################################################################
 
@@ -263,7 +248,7 @@ def plot_final(u_lst: np.ndarray[tuple[int, int], float]) -> None:
 
     # plot u field
     u_cont = u_val.contourf(X, Y, u_final)
-    u_contlines = u_val.contour(X, Y, u_final, linewidth=1, linestyle="solid", colors="black")
+    u_val.contour(X, Y, u_final, colors="black", linewidths=1, linestyles="solid")
     u_val.set_xlabel('x')
     u_val.set_ylabel('y')
     fig.colorbar(u_cont)
@@ -291,42 +276,34 @@ def main(u0: np.ndarray[tuple[int, int], float],
 
     u_prev = u0
     u_lst = [u0]
+    t_lst = [0]
 
-    u_new = adj_descent_step(u_prev, 1e-8, 1e-8, T=100, dt=dt, N=N)
-    u_prev = u_new
+    for T, tol in step:
+        stage += 1
+        u_lst1, t_lst1 = adj_descent_step(u_prev, tol, tol, T=T, dt=dt)
+        u_prev = u_lst1[-1]
 
-    for i in range(steps):
-        if i < len(tols):
-            tol = tols[i]
-        else:
-            tol = tols[-1]
-        
-        step += 1
-        u_new = adj_descent_step(u_prev, tol, tol, T=T, dt=dt, N=N)
-        u_prev = u_new
-        u_lst.append(u_new)
+        t_lst1_shifted = t_lst1 + t_lst[-1] 
+        u_lst = np.concatenate((u_lst, u_lst1[1:]), axis=0)
+        t_lst = np.concatenate((t_lst, t_lst1_shifted[1:]), axis=0)
+    
+    u_new = newton_krylov(
+                get_R, 
+                u_lst[-1], 
+                f_tol=1e-14,  
+                method='gmres', 
+                # 1. KILL THE LINE SEARCH: Force it to take the full Newton step
+                line_search=None, 
+                # 2. TIGHTEN THE INNER SOLVER: Force GMRES to be highly accurate
+                inner_tol=1e-10,   
+                # 3. INCREASE MAX INNER ITERATIONS: Give GMRES time to untangle the null space
+                inner_maxiter=50, 
+                iter=N,      
+                verbose=True
+    )
 
     print(len(u_lst))
-    '''
-    # Run 1
-    u_lst1, t_lst1 = adj_descent(u0, tol1, tol1, T=T1, dt=1)
-    
-    # Run 2: starts from the end of run 1
-    u_lst2, t_lst2 = adj_descent(u_lst1[-1], tol2, tol2, T=T2, dt=1)
 
-    # Run 3: starts from the end of run 2
-    u_lst3, t_lst3 = adj_descent(u_lst2[-1], tol3, tol3, T=T3, dt=1)
-
-    # 1. Handle the Time Offset
-    # Shift t_lst2 so it starts where t_lst1 ended
-    t_lst2_shifted = t_lst2 + t_lst1[-1]
-    t_lst3_shifted = t_lst3 + t_lst2[-1] + t_lst1[-1]
-
-    # 2. Concatenate and Remove Overlap
-    # Slicing [1:] removes the duplicate starting point (t=3) from the second run
-    u_lst = np.concatenate((u_lst1, u_lst2[1:], u_lst3[1:]), axis=0)
-    t_lst = np.concatenate((t_lst1, t_lst2_shifted[1:], t_lst3_shifted[1:]), axis=0)
-    '''
     # extract final u field
     u_final = u_lst[-1]
 
@@ -344,7 +321,7 @@ def main(u0: np.ndarray[tuple[int, int], float],
     plot_final(u_lst)
 
     # save entire u_final array data to output_u.csv file
-    np.savetxt('output_u.csv', u_final, delimiter=',', fmt='%.2f')
+    np.savetxt('output_u.csv', u_final, delimiter=',', fmt='%.18e')
 
 ###############################################################################################
 
@@ -358,7 +335,6 @@ X, KX, Y, KY = get_vars(2*Lx, 2*Ly, nx, ny)
 
 # define initial conditions of field variable u
 u0 = np.cos(np.pi*X/Lx) + np.cos(np.pi*(-X/Lx + 2*Y/Ly)) + np.cos(np.pi*(-X/Lx - 2*Y/Ly))
-
 f = 0
 #u0 = np.loadtxt("output_u.csv", delimiter=',')
 
@@ -370,3 +346,8 @@ tols = [1e-10] + [1e-12]*5 + [1e-14]*5 + [1e-16]
 
 # call to main function to execute descent
 main(u0, steps=10, tols=tols)
+
+'''print(np.linalg.norm(get_R(u0)))
+plt.contourf(X, Y, u0)
+plt.contour(X, Y, u0, colors="black", linewidths=1, linestyles="solid")
+plt.show()'''
