@@ -5,7 +5,7 @@ from adj_descent import adj_descent
 from plotting import Plotting
 from scipy.optimize import newton_krylov
 from get_R import get_R
-from NGh import perform_one_NGh_step
+from GMRES import gmres_step
 
 
 def main(u0: np.ndarray[tuple[int, int], float], 
@@ -29,8 +29,17 @@ def main(u0: np.ndarray[tuple[int, int], float],
         u_lst = np.concatenate((u_lst, u_lst1[1:]), axis=0)
         t_lst = np.concatenate((t_lst, t_lst1_shifted[1:]), axis=0)
 
+        '''
+        u_new = gmres_step(u_lst[-1])
+        # Append the final teleportation step for plotting
+        ngh_time_jump = t_lst[-1] + 1000 
+        u_lst = np.concatenate((u_lst, [u_new]), axis=0)
+        t_lst = np.concatenate((t_lst, [ngh_time_jump]), axis=0)
+        '''
+    
     # extract final u field
     u_final = u_lst[-1]
+    print(np.linalg.norm(get_R(0, u_final)))
 
     # check fourier values
     u_k = np.fft.fft2(u_final)
@@ -54,16 +63,16 @@ if __name__ == "__main__":
     #print(np.linalg.norm(get_R(0, np.loadtxt(r"2D_KS_adj\fixed_points\output_u.dat", delimiter=" "))))
 
     # define initial conditions of field variable u
-    u0 = np.sin(np.pi*(X/Lx - 5*Y/Ly)) + np.sin(np.pi*(5*X/Lx + Y/Ly)) + 2*np.sin(np.pi*(X/Lx)) + 2*np.sin(np.pi*(Y/Ly))
-    #u0 = np.loadtxt(r"2D_KS_adj\fixed_points\output_u.dat", delimiter=' ')
+    u0 = np.cos(np.pi*X/Lx) + np.cos(np.pi*(-X/Lx + 2*Y/Ly)) + np.cos(np.pi*(-X/Lx - 2*Y/Ly))
+    #u0 = np.loadtxt(r"2D_KS_adj_fixedpoints\fixed_points\output_u.dat", delimiter=' ')
 
     # define iteration time variables
     T1, tol1 = 10, 1e-8
-    T2, tol2 = 1000, 1e-12
-    T3, tol3 = 5000, 1e-12
-    T4, tol4 = 30000, 1e-14
-    T5, tol5 = 120000, 1e-16
-    T6, tol6 = 10000, 1e-16
-    stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5))
+    T2, tol2 = 40, 1e-10
+    T3, tol3 = 500, 1e-12
+    T4, tol4 = 500, 1e-14
+    T5, tol5 = 1000, 1e-16
+    T6, tol6 = 1000, 1e-16
+    stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5), (T6, tol6))
 
     main(u0, stages, dt)

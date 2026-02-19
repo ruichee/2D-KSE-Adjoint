@@ -11,7 +11,7 @@ nx, ny = 64, 64
 Lx, Ly = 20, 20  # Remember: If your domain is [0, 2*L_half], Lx here is the FULL length
 
 # TODO: Load your fixed point here
-u_fixed = np.loadtxt(r"2D_KS_adj\fixed_points\output_u.dat", delimiter=" ")
+u_fixed = np.loadtxt(r"2D_KS_adj_fixedpoints\fixed_points\output_u.dat", delimiter=" ")
 
 
 def compute_leading_eigenvalue(u_fixed, nx, ny):

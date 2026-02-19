@@ -47,7 +47,7 @@ class Plotting:
 
     def plot_final(u_lst: np.ndarray[tuple[int, int], float], t_lst) -> None:
 
-        fig, (u_val, G, R) = plt.subplots(1, 3, figsize=(18, 5))
+        fig, (u_val, G, R) = plt.subplots(1, 3, figsize=(16, 4))
         
         # extract final u field
         u_final = u_lst[-1]
