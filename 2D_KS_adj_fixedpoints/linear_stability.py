@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 from dealiase import dealiase
 from scipy.sparse.linalg import LinearOperator, eigs
 from get_R import get_R
+from input_vars import nx, ny, KX, KY
 # ==========================================
 # 1. SETUP AND GRID PARAMETERS
 # ==========================================
 # TODO: Replace with your actual domain parameters
-nx, ny = 64, 64
 Lx, Ly = 20, 20  # Remember: If your domain is [0, 2*L_half], Lx here is the FULL length
 
 # TODO: Load your fixed point here
@@ -67,7 +67,6 @@ predicted_slope = slope  # The theoretical eigenvalue you found
 # Wave numbers
 kx = 2 * np.pi * np.fft.fftfreq(nx, d=Lx/nx)
 ky = 2 * np.pi * np.fft.fftfreq(ny, d=Ly/ny)
-KX, KY = np.meshgrid(kx, ky, indexing='ij')
 
 # The Linear Operator (L = q^2 - q^4) for the 2D Kuramoto-Sivashinsky Eq.
 q2 = KX**2 + KY**2
@@ -146,7 +145,7 @@ def etdrk4_step(v, E, E2, Q, f1, f2, f3):
 # ==========================================
 # 4. INITIALIZATION & NOISE INJECTION
 # ==========================================
-dt = 0.01      # ETDRK4 can comfortably take large steps
+dt = 0.001      # ETDRK4 can comfortably take large steps
 T_end = 200.0  
 num_steps = int(T_end / dt)
 
@@ -226,7 +225,7 @@ plt.semilogy(time_record, norm_record, '-b', linewidth=2.5, label='2D KSE ETDRK4
 plt.semilogy(time_record, theoretical_line, '--r', linewidth=2, 
              label=f'Linear stability analysis: slope = {predicted_slope:.4f}')
 
-plt.ylim(1e-13, 1e4) 
+plt.ylim(1e-15, 1e4) 
 plt.xlim(-10, 210)
 plt.xlabel('Time (t)', fontsize=12)
 plt.ylabel('||U(t) - U(t_0)||_2', fontsize=12)
