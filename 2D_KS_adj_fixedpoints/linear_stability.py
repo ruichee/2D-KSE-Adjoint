@@ -73,7 +73,7 @@ q2 = KX**2 + KY**2
 L_op = q2 - q2**2
 
 # Dealiasing Mask (The 2/3 Rule to prevent aliasing shock)
-kmax_x, kmax_y = np.max(kx), np.max(ky)
+kmax_x, kmax_y = np.max(np.absolute(kx)), np.max(np.absolute(ky))
 dealias_mask = (np.abs(KX) < (2.0/3.0)*kmax_x) & (np.abs(KY) < (2.0/3.0)*kmax_y)
 
 # ==========================================
@@ -145,7 +145,7 @@ def etdrk4_step(v, E, E2, Q, f1, f2, f3):
 # ==========================================
 # 4. INITIALIZATION & NOISE INJECTION
 # ==========================================
-dt = 0.001      # ETDRK4 can comfortably take large steps
+dt = 0.01      # ETDRK4 can comfortably take large steps
 T_end = 200.0  
 num_steps = int(T_end / dt)
 
