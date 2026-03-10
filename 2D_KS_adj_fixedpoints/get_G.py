@@ -54,9 +54,9 @@ def get_G(t: float, u: np.ndarray[tuple[int, int], float],
     G = np.real(np.fft.ifft2(G_f))
 
     # print to track iteration progress, use to check for sticking points
+    # might need normalization based on the grid size - divide by np.sqrt(nx*ny)
     if print_res:
-        print(f"stage: {np.round(input_vars.stage, 15)}, \t time: {t}, \
-              \t ||G||: {np.round(np.linalg.norm(G) / np.sqrt(nx*ny), 15)}, \
-              \t ||R||: {np.round(np.linalg.norm(R), 15)}")
-
+        print(f"stage: {np.round(input_vars.stage, 12)}, \t time: {t}, \
+              \t ||G||: {np.round(np.linalg.norm(G), 12)}, \
+              \t ||R||: {np.round(np.linalg.norm(R), 12)}")
     return G

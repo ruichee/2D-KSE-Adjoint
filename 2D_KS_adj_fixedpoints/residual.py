@@ -18,12 +18,14 @@ def compute_residuals(t_lst: list, u_lst: list[np.ndarray[tuple[int, int], float
     # iterate through u at each time step to find corresponding RMS of G(u), for just "steps" number of points
     for i in tqdm(range(steps)):
         R_lst_trunc[i] = np.linalg.norm(get_R(t_lst[int(N/steps*i)], u_lst[int(N/steps*i)]))
-        G_lst_trunc[i] = np.linalg.norm(get_G(t_lst[int(N/steps*i)], u_lst[int(N/steps*i)])) / np.sqrt(nx*ny)
+        G_lst_trunc[i] = np.linalg.norm(get_G(t_lst[int(N/steps*i)], u_lst[int(N/steps*i)])) 
         t_lst_trunc[i] = t_lst[int(N/steps*i)]
     
     # add last point as well
     R_lst_trunc[-1] = np.linalg.norm(get_R(t_lst[-1], u_lst[-1]))
-    G_lst_trunc[-1] = np.linalg.norm(get_G(t_lst[-1], u_lst[-1])) / np.sqrt(nx*ny)
+    G_lst_trunc[-1] = np.linalg.norm(get_G(t_lst[-1], u_lst[-1])) 
     t_lst_trunc[-1] = t_lst[-1]
+
+    # consider normalizing by number of grid points, i.e. change L2-norm to RMS instead, divide norm by np.sqrt(nx*ny)
 
     return t_lst_trunc, R_lst_trunc, G_lst_trunc

@@ -1,6 +1,6 @@
 import numpy as np
 import input_vars
-from input_vars import X, Y, Lx, Ly, dt
+from input_vars import X, Y, Lx, Ly, dt, KX, KY
 from adj_descent import adj_descent
 from plotting import Plotting
 from scipy.optimize import newton_krylov
@@ -39,16 +39,30 @@ def main(u0: np.ndarray[tuple[int, int], float],
     
     # extract final u field
     u_final = u_lst[-1]
+
+    # remove DC offset
+    u_k = np.fft.fft2(u_final)
+    mask = (KX==0) * (KY==0)
+    u_k = np.where(mask, 0, u_k) 
+    u_final = np.real(np.fft.ifft2(u_k))
+
     print(np.linalg.norm(get_R(0, u_final)))
+    u_lst[-1] = u_final
 
     # check fourier values
-    u_k = np.fft.fft2(u_final)
     func = lambda x,y: np.round(np.abs(u_k[x,y]), 2)
     print("\nFourier Coefficients")
     print("\t", func(1, 0), func(1, 1), func(0, 1), "\n")
     print(f"\t e(2,0) e(2,1) e(3,0) e(3,1) e(0,2) e(1,2) e(2,2)")
     print(f"\t {func(0, 2)} {func(1, 2)} {func(0, 3)} {func(1, 3)} {func(2, 0)} {func(2, 1)} {func(2, 2)} \n")
     print(f"\t e(0,3): {func(3, 0)}, e(1,3): {func(3, 1)}")
+    print()
+
+    print("\nFourier Coefficients (mirrored direction)")
+    print("\t", func(-1, 0), func(-1, 1), func(0, 1), "\n")
+    print(f"\t e(2,0) e(2,1) e(3,0) e(3,1) e(0,2) e(1,2) e(2,2)")
+    print(f"\t {func(0, 2)} {func(-1, 2)} {func(0, 3)} {func(-1, 3)} {func(-2, 0)} {func(-2, 1)} {func(-2, 2)} \n")
+    print(f"\t e(0,3): {func(-3, 0)}, e(1,3): {func(-3, 1)}")
     print()
 
     # plot final results 
@@ -63,16 +77,19 @@ if __name__ == "__main__":
     #print(np.linalg.norm(get_R(0, np.loadtxt(r"2D_KS_adj\fixed_points\output_u.dat", delimiter=" "))))
 
     # define initial conditions of field variable u
-    u0 = (np.exp(np.sin(np.pi*(X/Lx - Y/Ly))) - np.exp(np.cos(np.pi*(X/Lx + Y/Ly))))**3 * np.cos(np.pi*(X/Lx + Y/Ly))
-    u0 = np.loadtxt(r"2D_KS_adj_fixedpoints\fixed_points\output_u.dat", delimiter=' ')
+    kx = np.pi * (X / Lx)
+    ky = np.pi * (Y / Ly)
+    u0 = np.sin(np.pi*3*(X/Lx + Y/Ly)) * np.sin(np.pi*3*(X/Lx - Y/Ly)) + np.exp(np.sin(np.pi*2*(X/Lx + Y/Ly))) * np.exp(np.cos(np.pi*2*(X/Lx - Y/Ly)))
+
+    #u0 = np.loadtxt(r"2D_KS_adj_fixedpoints\fixed_points\output_u.dat", delimiter=' ')
 
     # define iteration time variables
     T1, tol1 = 10, 1e-8
     T2, tol2 = 10, 1e-10
     T3, tol3 = 100, 1e-12
-    T4, tol4 = 10000, 1e-14
-    T5, tol5 = 2e4, 1e-16
-    T6, tol6 = 1000, 1e-16
-    stages = ((T5, tol5),)
+    T4, tol4 = 2e4, 1e-14
+    T5, tol5 = 3e5, 1e-16
+    T6, tol6 = 1e6, 1e-17
+    stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5), )
 
     main(u0, stages, dt)
