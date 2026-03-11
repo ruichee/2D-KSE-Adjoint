@@ -1,18 +1,17 @@
 import numpy as np
 import input_vars
-from input_vars import X, Y, Lx, Ly, dt, KX, KY
+from input_vars import X, Y, S, Lx, Ly, Ls, dt, KX, KY, KS
 from adj_descent import adj_descent
 from plotting import Plotting
-from scipy.optimize import newton_krylov
 from get_R import get_R
-from GMRES import gmres_step
 
 
 def main(u0: np.ndarray[tuple[int, int], float], 
          stages: tuple[tuple[int, float]], dt) -> None:
 
     # plot initial fields
-    Plotting.plot_initial(u0)
+    #Plotting.plot_initial(u0[0])
+
 
     u_prev = u0
     u_lst = np.array([u0])
@@ -66,7 +65,7 @@ def main(u0: np.ndarray[tuple[int, int], float],
     print()
 
     # plot final results 
-    Plotting.plot_final(u_lst, t_lst)
+    #Plotting.plot_final(u_lst, t_lst)
 
     # save entire u_final array data to output_u.csv file
     np.savetxt(r'2D_KS_adj_fixedpoints\fixed_points\output_u.dat', u_final, delimiter=' ', fmt='%.18e')
@@ -79,7 +78,8 @@ if __name__ == "__main__":
     # define initial conditions of field variable u
     kx = np.pi * (X / Lx)
     ky = np.pi * (Y / Ly)
-    u0 = np.sin(np.pi*3*(X/Lx + Y/Ly)) * np.sin(np.pi*3*(X/Lx - Y/Ly)) + np.exp(np.sin(np.pi*2*(X/Lx + Y/Ly))) * np.exp(np.cos(np.pi*2*(X/Lx - Y/Ly)))
+    ks = 2*np.pi * (S / Ls)
+    u0 = np.sin(kx + ky) * np.cos(ks)
 
     #u0 = np.loadtxt(r"2D_KS_adj_fixedpoints\fixed_points\output_u.dat", delimiter=' ')
 
