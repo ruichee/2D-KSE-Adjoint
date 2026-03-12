@@ -1,7 +1,8 @@
 from get_vars import get_vars
+import numpy as np
 
 # define variables 
-Lx = 39                 # spatial domain size
+Lx = 18                 # spatial domain size
 nx = 64                 # number of spatial collocation points
 Ls = 1                          # time (normalized) domain size
 ns = 64                         # number of temporal collocation points

@@ -28,6 +28,8 @@ def get_R(t, L, print_res=False):
     # set mean flow = 0, no DC component/offset
     #mask = (KX==0)
     #R_f = np.where(mask, 0, R_f)               # ensures the sine wave has no constant component (kx=0 and ky=0)
+    mask_k = np.abs(KX) > 15
+    R_f[mask_k] = 0.0
 
     # convert back to physical space
     R = np.real(np.fft.ifft2(R_f)) + f         # obtain R(u)

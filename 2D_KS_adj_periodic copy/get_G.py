@@ -33,6 +33,14 @@ def get_G(t, L, print_res=False):
     G1_f = np.fft.fft2(unsteady + nonlin_term + lin_term)
     G1_f = dealiase(G1_f)
 
+    # --- MINIMAL CHANGE: GALERKIN TRUNCATION ---
+    # Cut off high spatial frequencies to prevent k^8 explicit Euler explosion
+    # k_cutoff = 15 is standard for nx=64 (d=32 in the paper)
+    k_cutoff = 15 
+    mask_k = np.abs(KX) > k_cutoff
+    G1_f[mask_k] = 0.0
+    # -------------------------------------------
+
     # set mean flow = 0, no DC component/offset
     #mask = (KX==0) 
     #G1_f = np.where(mask, 0, G1_f)
@@ -40,7 +48,7 @@ def get_G(t, L, print_res=False):
     # convert back to physical space
     G1 = np.real(np.fft.ifft2(G1_f))
 
-	# T component of G
+    # T component of G
     u_f = np.fft.fft2(u)
     u_s_f = 1j * KS * u_f
     u_s = np.fft.ifft2(u_s_f)
@@ -51,7 +59,7 @@ def get_G(t, L, print_res=False):
     G2 = np.real(integrand_hat[0, 0]) * dx * ds
 
 
-	# print to track iteration progress, use to check for sticking points
+    # print to track iteration progress, use to check for sticking points
     # might need normalization based on the grid size - divide by np.sqrt(nx*ny)
     if print_res:
         print(f"stage: {np.round(input_vars.stage, 8)}, time: {np.round(t, 12)}, \

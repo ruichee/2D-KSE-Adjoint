@@ -2,7 +2,7 @@ import numpy as np
 import input_vars
 from input_vars import X, S, Lx, Ls, dt, KX, KS
 from adj_descent import adj_descent
-#from plotting import Plotting
+from plotting import Plotting
 from get_R import get_R
 
 
@@ -19,16 +19,32 @@ def main(u0: np.ndarray[tuple[int, int], float], T0,
     P1, P2 = u_k[:, 1].imag, u_k[:, 2].imag
     print(P1)
 
-    import matplotlib.pyplot as plt
-    plt.scatter(P1, P2)
-    plt.plot(P1, P2)
-    plt.show()
+    Plotting.plot_init_orbit(P1, P2)
 
     L_prev = np.append(u0.flatten(), T0)
     L_lst = np.array([L_prev])
     t_lst = np.array([0])
 
-    for t_end, tol in stages:
+    from eulerstep import euler_descent
+
+    for t_end in stages:
+        input_vars.stage += 1
+        if t_end == 0:
+             continue
+        
+        # --- CHANGED LINE HERE ---
+        # We drop the 'tol' arguments because explicit Euler doesn't use adaptive tolerances
+        L_lst1, t_lst1 = euler_descent(L_prev, t_end=t_end, dt=0.15)
+        # -------------------------
+        
+        L_prev = L_lst1[-1]
+
+        t_lst1_shifted = t_lst1 + t_lst[-1] 
+        L_lst = np.concatenate((L_lst, L_lst1[1:]), axis=0)
+        t_lst = np.concatenate((t_lst, t_lst1_shifted[1:]), axis=0)
+
+
+    '''for t_end, tol in stages:
         input_vars.stage += 1
         if t_end == 0:
              continue
@@ -38,8 +54,9 @@ def main(u0: np.ndarray[tuple[int, int], float], T0,
         t_lst1_shifted = t_lst1 + t_lst[-1] 
         L_lst = np.concatenate((L_lst, L_lst1[1:]), axis=0)
         t_lst = np.concatenate((t_lst, t_lst1_shifted[1:]), axis=0)
-
         '''
+
+    '''
         u_new = gmres_step(u_lst[-1])
         # Append the final teleportation step for plotting
         ngh_time_jump = t_lst[-1] + 1000 
@@ -61,12 +78,17 @@ def main(u0: np.ndarray[tuple[int, int], float], T0,
     u_k_final = np.fft.fft(u_final, axis=1)
 
     P1, P2 = u_k_final[:, 1].imag, u_k_final[:, 2].imag
-    plt.scatter(P1, P2)
-    plt.plot(P1, P2)
-    plt.show()
+    Plotting.plot_init_orbit(P1, P2)
 
+    import matplotlib.pyplot as plt
     T_lst = L_lst.T[-1]
     plt.plot(T_lst)
+    plt.show()
+
+    residual_lst = [np.linalg.norm(get_R(0, L)) for L in L_lst]
+    
+    plt.plot(residual_lst)
+    plt.semilogy()
     plt.show()
 
     '''print(np.linalg.norm(get_R(0, u_final)))
@@ -89,10 +111,10 @@ def main(u0: np.ndarray[tuple[int, int], float], T0,
     print()
 
     # plot final results 
-    #Plotting.plot_final(u_lst, t_lst)
+    #Plotting.plot_final(u_lst, t_lst)'''
 
     # save entire u_final array data to output_u.csv file
-    np.savetxt(r'2D_KS_adj_fixedpoints\fixed_points\output_u.dat', u_final, delimiter=' ', fmt='%.18e')'''
+    np.savetxt(r'2D_KS_adj_periodic copy\store_orbit.dat', L_final, delimiter=' ', fmt='%.18e')
 
 
 if __name__ == "__main__":
@@ -102,17 +124,22 @@ if __name__ == "__main__":
     # define initial conditions of field variable u
     kx = 2*np.pi * (X / Lx)
     ks = 2*np.pi * (S / Ls)
-    u0 = np.cos(kx + 0.1) * np.cos(ks) + np.cos(2*kx + ks + 0.3) + np.cos(kx + 2*ks + 0.2)
+    u0 = 1.5 * np.cos(ks) * np.sin(kx) + \
+            0.8 * np.sin(2 * ks + 2 * kx + 0.5)
 
-    #u0 = np.loadtxt(r"2D_KS_adj_fixedpoints\fixed_points\output_u.dat", delimiter=' ')
+    #L0 = np.loadtxt(r"2D_KS_adj_periodic copy\store_orbit.dat", delimiter=' ')
+    #u0 = L0[:-1].reshape(ns, nx)
+    #T0 = L0[-1]
 
     # define iteration time variables
-    T1, tol1 = 10, 1e-6
+    '''T1, tol1 = 100, 1e-6
     T2, tol2 = 100, 1e-8
-    T3, tol3 = 1000, 1e-10
-    T4, tol4 = 10000, 1e-12
-    T5, tol5 = 30000, 1e-14
-    T6, tol6 = 5e4, 1e-17
-    stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5), (T6, tol6),)
+    T3, tol3 = 1000, 1e-12
+    T4, tol4 = 2000, 1e-12
+    T5, tol5 = 10000, 1e-14
+    T6, tol6 = 100000, 1e-16
+    stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5), (T6, tol6), )'''
 
-    main(u0, 100, stages, dt)
+    stages = (1e4,)*2
+
+    main(u0, 25, stages, dt)

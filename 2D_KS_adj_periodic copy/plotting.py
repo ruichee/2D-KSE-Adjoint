@@ -7,6 +7,35 @@ from residual import compute_residuals
 
 class Plotting:
 
+    def plot_init_orbit(P1, P2):
+            
+        # 1. Force the loop to close by appending the first point to the end
+        P1_closed = np.append(P1, P1[0])
+        P2_closed = np.append(P2, P2[0])
+
+        # 2. Setup a publication-quality figure
+        plt.figure(figsize=(6, 6)) # A square aspect ratio is standard for phase portraits
+        plt.rc('text', usetex=False) # Use True if you have LaTeX installed on your machine
+        plt.rc('font', family='serif', size=14)
+
+        # 3. Plot without markers (just a clean, smooth solid line)
+        # Use a slight transparency (alpha) if comparing multiple orbits
+        plt.plot(P1_closed, P2_closed, color='midnightblue', linewidth=1.5, linestyle='-')
+
+        # 4. Clean up the axes
+        plt.xlabel('$P_1$')
+        plt.ylabel('$P_2$')
+        plt.title(f'Initial Guess')
+
+        # Keep the grid subtle so it doesn't distract from the orbit's topology
+        plt.grid(True, linestyle='--', alpha=0.5)
+
+        # Force the physical scale of x and y to be equal so the shape isn't warped
+        plt.gca().set_aspect('equal', adjustable='datalim') 
+
+        plt.tight_layout()
+        plt.show()
+
     def plot_from_data(path):
 
         u = np.loadtxt(path)

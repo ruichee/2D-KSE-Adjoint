@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from get_G import get_G
 from get_R import get_R
-from input_vars import nx, ny
+from input_vars import nx, ns
 
 def compute_residuals(t_lst: list, u_lst: list[np.ndarray[tuple[int, int], float]], steps: int = 1000):
 
