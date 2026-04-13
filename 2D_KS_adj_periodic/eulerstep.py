@@ -7,8 +7,8 @@ def euler_descent(L_initial: np.ndarray, t_end: float, dt: float) -> tuple[np.nd
     num_steps = max(1, int(t_end / dt))
     
     L_current = np.copy(L_initial)
-    L_lst = [L_current]
-    t_lst = [0.0]
+    L_lst = []
+    t_lst = []
     
     tau = 0.0
     
@@ -38,8 +38,8 @@ def euler_descent(L_initial: np.ndarray, t_end: float, dt: float) -> tuple[np.nd
         u_new_flat = np.real(np.fft.ifft2(u_new_f)).flatten()
         
         # --- EXPLICIT STEP FOR T ---
-        # The paper uses purely explicit Euler for T
-        T_new = T_current + dt * G2
+        # The paper uses purely explicit Euler for T, explicit preconditioning by *10
+        T_new = T_current + (dt*0) * G2
         
         # Pack and step
         L_current = np.append(u_new_flat, T_new)
@@ -48,5 +48,12 @@ def euler_descent(L_initial: np.ndarray, t_end: float, dt: float) -> tuple[np.nd
         if store_flag:
             L_lst.append(L_current)
             t_lst.append(tau)
+
+            '''
+            u_k = (np.fft.fft(u_new_flat.reshape(64,64), axis=1))
+
+            P1, P2 = u_k[:, 1].imag, u_k[:, 2].imag
+            from plotting import Plotting
+            Plotting.plot_init_orbit(P1, P2)'''
         
     return np.array(L_lst), np.array(t_lst)

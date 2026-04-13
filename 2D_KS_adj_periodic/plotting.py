@@ -2,10 +2,53 @@ import numpy as np
 import matplotlib.pyplot as plt
 from get_R import get_R
 from get_G import get_G
-from input_vars import X, Y
+from input_vars import X, S
 from residual import compute_residuals
 
 class Plotting:
+
+    def plot_init_orbit(P1, P2, P3, P4):
+            
+        # setup axis and figure
+        fig, (p1p2, p1p3, p1p4) = plt.subplots(1, 3, figsize=(15, 4))
+
+        # 1. Force the loop to close by appending the first point to the end
+        P1_closed = np.append(P1, P1[0])
+        P2_closed = np.append(P2, P2[0])
+        P3_closed = np.append(P3, P3[0])
+        P4_closed = np.append(P4, P4[0])
+
+        # 2. Setup a publication-quality figure
+        #plt.figure(figsize=(6, 6)) # A square aspect ratio is standard for phase portraits
+        plt.rc('text', usetex=False) # Use True if you have LaTeX installed on your machine
+        plt.rc('font', family='serif', size=14)
+
+        # 3. Plot without markers (just a clean, smooth solid line)
+        # Use a slight transparency (alpha) if comparing multiple orbits
+        p1p2.plot(P1_closed, P2_closed, color='midnightblue', linewidth=1.5, linestyle='-')
+        p1p3.plot(P1_closed, P3_closed, color='midnightblue', linewidth=1.5, linestyle='-')
+        p1p4.plot(P1_closed, P4_closed, color='midnightblue', linewidth=1.5, linestyle='-')
+
+        # 4. Clean up the axes
+        p1p2.set_xlabel('$P_1$')
+        p1p2.set_ylabel('$P_2$')
+        p1p3.set_xlabel('$P_1$')
+        p1p3.set_ylabel('$P_3$')
+        p1p4.set_xlabel('$P_1$')
+        p1p4.set_ylabel('$P_4$')
+
+        # Keep the grid subtle so it doesn't distract from the orbit's topology
+        p1p2.grid(True, linestyle='--', alpha=0.5)
+        p1p3.grid(True, linestyle='--', alpha=0.5)
+        p1p4.grid(True, linestyle='--', alpha=0.5)
+
+        # Force the physical scale of x and y to be equal so the shape isn't warped
+        p1p2.set_aspect('equal', adjustable='datalim') 
+        p1p3.set_aspect('equal', adjustable='datalim') 
+        p1p4.set_aspect('equal', adjustable='datalim') 
+
+        plt.tight_layout()
+        plt.show()
 
     def plot_from_data(path):
 

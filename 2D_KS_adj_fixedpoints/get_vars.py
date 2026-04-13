@@ -10,7 +10,7 @@ def get_vars(Lx: float, Ly: float, nx: int, ny: int) -> tuple[np.ndarray[any, fl
     
     kx = 2*np.pi * np.fft.fftfreq(nx, d=Lx/nx)  # fourier wave numbers (kx) for DFT in x-dir
     ky = 2*np.pi * np.fft.fftfreq(ny, d=Ly/ny)  # fourier wave numbers (ky) for DFT in y-dir
-    
+
     KX, KY = np.meshgrid(kx, ky)                # meshgrid of all combinations of kx and ky waves
     X, Y = np.meshgrid(x, y)                    # meshgrid of all combinations of x and y values
     

@@ -23,7 +23,7 @@ def compute_leading_eigenvalue(u_fixed, nx, ny):
     R_fixed_flat = get_R(0, u_fixed_2d).flatten()
     
     # --- FIX 1: Increase epsilon to survive the noise floor ---
-    epsilon = 1e-5 
+    epsilon = 1e-5
     
     def jacobian_action(v_1d):
         u_perturbed_1d = u_flat + epsilon * v_1d

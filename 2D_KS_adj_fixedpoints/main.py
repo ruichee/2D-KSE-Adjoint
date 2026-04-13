@@ -82,14 +82,15 @@ if __name__ == "__main__":
     u0 = np.sin(np.pi*3*(X/Lx + Y/Ly)) * np.sin(np.pi*3*(X/Lx - Y/Ly)) + np.exp(np.sin(np.pi*2*(X/Lx + Y/Ly))) * np.exp(np.cos(np.pi*2*(X/Lx - Y/Ly)))
 
     #u0 = np.loadtxt(r"2D_KS_adj_fixedpoints\fixed_points\output_u.dat", delimiter=' ')
+    #np.savetxt(r'2D_KS_adj_fixedpoints\u_k_save1.dat', u0, delimiter=' ', fmt='%.18e')
 
     # define iteration time variables
     T1, tol1 = 10, 1e-8
     T2, tol2 = 10, 1e-10
-    T3, tol3 = 100, 1e-12
-    T4, tol4 = 2e4, 1e-14
-    T5, tol5 = 3e5, 1e-16
+    T3, tol3 = .1, 1e-12
+    T4, tol4 = 880, 1e-14
+    T5, tol5 = 2e3, 1e-16
     T6, tol6 = 1e6, 1e-17
-    stages = ((T1, tol1), (T2, tol2), (T3, tol3), (T4, tol4), (T5, tol5), )
+    stages = ((T3, tol3), )
 
-    main(u0, stages, dt)
+    main(u0, stages, 0.1)
